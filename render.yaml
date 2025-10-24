@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: go-api
+    env: go
+    plan: free
+    buildCommand: go build -o server ./cmd/api
+    startCommand: ./server
+    envVars:
+      - key: GO_ENV
+        value: production
