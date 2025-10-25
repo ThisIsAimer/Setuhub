@@ -52,21 +52,41 @@ func JwtMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if claims["auth"] == "unverified" {
-			if r.URL.Path != "/signup/otp" {
-				myErr := utils.ErrorHandler(err, "email not verified")
-				http.Error(w, myErr.Error(), http.StatusUnauthorized)
-				return
-			}
+		auth, _ := claims["auth"].(string)
+
+		path := normalizePath(r.URL.Path)
+
+		unauthorized := func(msg string) {
+			myErr := utils.ErrorHandler(errors.New(msg), msg)
+			http.Error(w, myErr.Error(), http.StatusUnauthorized)
 		}
 
-		if r.URL.Path != "/authenticate" {
-			if claims["auth"] == "mail" {
-				myErr := utils.ErrorHandler(err, "email verified but not authenticated")
-				http.Error(w, myErr.Error(), http.StatusUnauthorized)
-				return
+		switch auth {
+		case "verified":
+			// ok, proceed
 
+		case "unverified":
+			if path != "/signup/otp" {
+				unauthorized("email not verified")
+				return
 			}
+
+		case "mail":
+			if path != "/authenticate" {
+				unauthorized("email verified but not authenticated")
+				return
+			}
+
+		case "reset":
+			if path != "/login/forgotpassword/otp" {
+				unauthorized("please reset password first")
+				return
+			}
+
+		default:
+			// block unknown/missing auth states
+			unauthorized("invalid authentication state")
+			return
 		}
 
 		ctx := context.WithValue(r.Context(), utils.JwtKey("uuid"), claims["uuid"])
@@ -76,4 +96,12 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 
+}
+
+func normalizePath(path string) string {
+	// optional: normalize trailing slash, etc.
+	if len(path) > 1 && path[len(path)-1] == '/' {
+		return path[:len(path)-1]
+	}
+	return path
 }

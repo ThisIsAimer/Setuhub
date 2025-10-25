@@ -109,7 +109,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := databasehandler.SignupOtpDBHandler(uuid, otp.Otp)
+	user, err := databasehandler.SignupOtpDBHandler(uuid, otp.Otp.String)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -328,18 +328,35 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.ForgotPasswordDBHandler(req.Email)
+	user, err := databasehandler.ForgotPasswordDBHandler(req.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// send token as response or a cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		Expires:  time.Now().AddDate(0, 6, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
 
 	w.Header().Set("Content-Type", "application/json")
 
 	responce := struct {
 		Status string `json:"status"`
 	}{
-		Status: fmt.Sprintf("Sent reset link to email : %s", req.Email),
+		Status: fmt.Sprintf("otp sent to email : %s", req.Email),
 	}
 
 	err = json.NewEncoder(w).Encode(responce)
@@ -355,7 +372,11 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 // reset password------------------------------------------------------------------------------------------------------
 func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 
-	token := r.PathValue("resetcode")
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
 
 	var req models.ResetPassword
 
@@ -383,7 +404,7 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.ResetPassExecDBHandler(token, req.NewPassword)
+	err = databasehandler.ResetPassExecDBHandler(uuid, req.Otp, req.NewPassword)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -394,7 +415,7 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 	responce := struct {
 		Status string `json:"message"`
 	}{
-		Status: "password updated successfully",
+		Status: "password updated successfully, go login with the new password",
 	}
 
 	err = json.NewEncoder(w).Encode(responce)

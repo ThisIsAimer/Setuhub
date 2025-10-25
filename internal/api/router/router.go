@@ -16,7 +16,7 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /logout", handlers.LogoutHandler)
 
 	mux.HandleFunc("POST /login/forgotpassword", handlers.ForgotPassHandler)
-	mux.HandleFunc("POST /login/forgotpassword/reset/{resetcode}", handlers.ResetPassHandler)
+	mux.HandleFunc("POST /login/forgotpassword/otp", handlers.ResetPassHandler)
 
 	return mux
 }

@@ -2,15 +2,10 @@ package databasehandler
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"hackathon/internal/models"
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
-	"os"
-	"strconv"
-	"time"
 
 	"github.com/go-mail/mail/v2"
 )
@@ -128,22 +123,26 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 	}
 	defer db.Close()
 
-	var realOtp string
+	var realOtp models.OTP
 
-	err = db.QueryRow("SELECT otp, authentication FROM users WHERE uuid = $1", otp).Scan(
+	err = db.QueryRow("SELECT otp FROM users WHERE uuid = $1", otp).Scan(
 		&realOtp,
 	)
+
+	if !realOtp.Otp.Valid {
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
+	}
 
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "user not found")
 	}
 
-	if otp != realOtp {
+	if otp != realOtp.Otp.String {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
 	}
 
-	_, err = db.Exec("UPDATE users SET authentication = $1, otp = $2 WHERE uuid = $3",
-		"mail", "", uuid,
+	_, err = db.Exec("UPDATE users SET authentication = $1, otp = NULL WHERE uuid = $2",
+		"mail", uuid,
 	)
 
 	if err != nil {
@@ -223,73 +222,55 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 }
 
 // forgot password------------------------------------------------------------------------------------------------------------
-func ForgotPasswordDBHandler(email string) error {
+func ForgotPasswordDBHandler(email string) (models.User, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database")
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
 	}
 	defer db.Close()
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid FROM users WHERE email = $1", email).Scan(&user.Uuid)
+	err = db.QueryRow("SELECT uuid, role, FROM users WHERE email = $1", email).Scan(
+		&user.Uuid, &user.Role,
+	)
+
+	user.Authentication = "reset"
 
 	if err != nil {
-		return utils.ErrorHandler(err, "user not found")
+		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
 	}
 
-	expResetTime, err := strconv.Atoi(os.Getenv("RESET_TOKEN_EXP_DURATION"))
-	if err != nil {
-		return utils.ErrorHandler(err, "failed to send password reset mail")
-	}
+	otp := randOTP(6)
 
-	mins := time.Duration(expResetTime) * time.Minute
-
-	// adding expiry time
-	expiry := time.Now().Add(mins)
-
-	tokenBytes := make([]byte, 32)
-	_, err = rand.Read(tokenBytes)
-	if err != nil {
-		return utils.ErrorHandler(err, "error making salt")
-	}
-
-	token := hex.EncodeToString(tokenBytes)
-
-	hashedToken := sha256.Sum256(tokenBytes)
-
-	hashedTokenString := hex.EncodeToString(hashedToken[:])
-	fmt.Println("expiry time", expiry)
-
-	_, err = db.Exec("UPDATE users SET password_reset_code = $1, password_reset_expires = $2 WHERE uuid = $3", hashedTokenString, expiry, user.Uuid)
+	_, err = db.Exec("UPDATE users SET otp = $1 WHERE uuid = $2",
+		otp, user.Uuid,
+	)
 
 	if err != nil {
-		return utils.ErrorHandler(err, "error setting token")
+		return models.User{}, utils.ErrorHandler(err, "error setting token")
 	}
 
-	baseURL := os.Getenv("BASE_URL")
-
-	resetUrl := fmt.Sprintf("%s/login/forgotpassword/reset/%s", baseURL, token)
-	message := fmt.Sprintf(" forgot your password? reset it using link %s \nIf you didnt reset a password reset, please ignore, the link is only valid for %v mins", resetUrl, expiry)
+	message := fmt.Sprintf("forgot your password for <our app>? OTP to reset password is: %s", otp)
 
 	myMail := mail.NewMessage()
 
 	myMail.SetHeader("From", "ourapp@example.com") // replace email
 	myMail.SetHeader("To", email)
-	myMail.SetHeader("Subject", "Password reset link")
+	myMail.SetHeader("Subject", "Password reset otp")
 	myMail.SetBody("text/plain", message)
 
 	dialer := mail.NewDialer("localhost", 1025, "", "")
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
-		return utils.ErrorHandler(err, "error sending mail")
+		return models.User{}, utils.ErrorHandler(err, "error sending mail")
 	}
 
-	return nil
+	return user, nil
 }
 
-func ResetPassExecDBHandler(resetCode, new_pass string) error {
+func ResetPassExecDBHandler(uuid, otp, password string) error {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -297,21 +278,14 @@ func ResetPassExecDBHandler(resetCode, new_pass string) error {
 	}
 	defer db.Close()
 
-	var user models.User
+	var realOtp models.OTP
 
-	bytes, err := hex.DecodeString(resetCode)
-	if err != nil {
-		return utils.ErrorHandler(err, "error decoding string")
+	err = db.QueryRow(`Select uuid, role, authentication, otp FROM users WHERE uuid = $1`, uuid).
+		Scan(&realOtp)
+
+	if !realOtp.Otp.Valid {
+		return utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
 	}
-
-	hashedToken := sha256.Sum256(bytes)
-
-	hashedTokenString := hex.EncodeToString(hashedToken[:])
-
-	query := `Select uuid, email FROM users WHERE password_reset_code = $1 AND password_reset_expires > $2`
-
-	err = db.QueryRow(query, hashedTokenString, time.Now()).
-		Scan(&user.Uuid, &user.Email)
 
 	if err != nil {
 		return utils.ErrorHandler(err, "invalid or expired reset code")
@@ -323,14 +297,14 @@ func ResetPassExecDBHandler(resetCode, new_pass string) error {
 	if err != nil {
 		return utils.ErrorHandler(err, "error making salt")
 	}
-	new_pass, err = utils.PassEncoder(new_pass, salt)
+	new_pass, err := utils.PassEncoder(password, salt)
 	if err != nil {
 		return err
 	}
 
-	updateQuery := `UPDATE users SET password = $1, password_reset_code = NULL, password_reset_expires = NULL WHERE uuid = $2`
-
-	_, err = db.Exec(updateQuery, new_pass, user.Uuid)
+	_, err = db.Exec(`UPDATE users SET password = $1, otp = NULL WHERE uuid = $2`,
+		new_pass, uuid,
+	)
 
 	if err != nil {
 		return utils.ErrorHandler(err, "error updating password")

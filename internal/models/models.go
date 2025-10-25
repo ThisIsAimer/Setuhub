@@ -23,11 +23,11 @@ type UserInfo struct {
 }
 
 type OTP struct {
-	Otp string `json:"otp,omitempty" db:"otp,omitempty"`
+	Otp sql.NullString `json:"otp" db:"otp"`
 }
 
 type ResetPassword struct {
-	PasswordResetCode sql.NullString `json:"password_reset_code" db:"password_reset_code,omitempty"`
-	NewPassword       string         `json:"new_password,omitempty" db:"new_password,omitempty"`
-	ConfirmPassword   string         `json:"confirm_password,omitempty" db:"confirm_password,omitempty"`
+	Otp             string `json:"otp,omitempty" db:"otp,omitempty"`
+	NewPassword     string `json:"new_password,omitempty" db:"new_password,omitempty"`
+	ConfirmPassword string `json:"confirm_password,omitempty" db:"confirm_password,omitempty"`
 }

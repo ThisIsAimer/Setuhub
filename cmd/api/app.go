@@ -30,7 +30,7 @@ func main() {
 
 	rateLimiter := mid.NewRateLimiter(5, time.Second*5)
 
-	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/login/forgotpassword", "/login/forgotpassword/reset/")
+	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/login/forgotpassword")
 
 	secureRouter := utils.ApplyMiddlewares(router.Router(), mid.SecurityHeaders, jwtMiddleware, mid.XSSMiddleware, rateLimiter.Middleware, mid.Cors)
 
