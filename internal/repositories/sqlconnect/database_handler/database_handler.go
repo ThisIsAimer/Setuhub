@@ -45,7 +45,7 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		if err != nil {
 			return models.User{}, utils.ErrorHandler(err, "account exists but password wrong")
 		}
-		
+
 		newUser.Password = ""
 		newUser.ConfirmPassword = ""
 
@@ -142,7 +142,40 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
 	}
 
-	_, err = db.Exec("UPDATE users SET authentication = $1, otp = $2 WHERE uuid = $3", "mail", "")
+	_, err = db.Exec("UPDATE users SET authentication = $1, otp = $2 WHERE uuid = $3",
+		"mail", "", uuid,
+	)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error setting token")
+	}
+
+	var user models.User
+
+	err = db.QueryRow("SELECT uuid, role, authentication FROM users WHERE uuid = $1", uuid).Scan(
+		&user.Uuid, &user.Role, &user.Authentication,
+	)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "user not found")
+	}
+
+	return user, nil
+}
+
+// authenticat ------------------------------------------------------------------------------------------------------------------
+
+func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	_, err = db.Exec("UPDATE users SET aadhar = $1, phone = $2, gender = $3, address = $4, age = $5, authentication = $6 WHERE uuid = $7",
+		userInfo.Aadhar, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.Age, "verified", uuid,
+	)
 
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error setting token")
@@ -162,7 +195,7 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 }
 
 // login---------------------------------------------------------------------------------------------------------------------------
-func LoginDBHandlerFunc(givenPass string, email string) (models.User, error) {
+func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -170,16 +203,23 @@ func LoginDBHandlerFunc(givenPass string, email string) (models.User, error) {
 	}
 	defer db.Close()
 
-	var dbUser models.User
+	var user models.User
 
-	err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", email).Scan(
-		&dbUser.Uuid, &dbUser.Email, &dbUser.Password,
+	err = db.QueryRow("SELECT uuid, password, role, authentication FROM users WHERE email = $1", email).Scan(
+		&user.Uuid, &user.Password, &user.Role, &user.Authentication,
 	)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
 	}
 
-	return dbUser, nil
+	err = utils.VerifyPassword(givenPass, user.Password)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "passwords dont match")
+	}
+
+	user.Password = ""
+
+	return user, nil
 }
 
 // forgot password------------------------------------------------------------------------------------------------------------

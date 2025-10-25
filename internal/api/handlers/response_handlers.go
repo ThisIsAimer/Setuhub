@@ -33,7 +33,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 	newUser, err = databasehandler.SignUpDBHandler(newUser)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -74,7 +74,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok {
-		http.Error(w, "no jwt", http.StatusUnauthorized)
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -112,8 +112,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	user, err := databasehandler.SignupOtpDBHandler(uuid, otp.Otp)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -149,6 +148,83 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// authenticate ------------------------------------------------------------------------------------------------
+
+func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if auth == "verified" {
+		http.Error(w, "User already verified", http.StatusBadRequest)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	var userInfo models.UserInfo
+
+	err := decoder.Decode(&userInfo)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = checkEmptyField(userInfo)
+
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, " one or user info fields empty").Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := databasehandler.AuthenticationDBhandler(uuid, userInfo)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// send token as response or a cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		Expires:  time.Now().AddDate(0, 6, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	response := struct {
+		Status string `json:"status"`
+	}{
+		Status: "Success",
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // login-------------------------------------------------------------------------------------------
 
 func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
@@ -156,35 +232,27 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
 
-	var aUser models.User
+	var user models.User
 
-	err := decoder.Decode(&aUser)
+	err := decoder.Decode(&user)
 	if err != nil {
 		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
 		return
 	}
 
-	if aUser.Email == "" || aUser.Password == "" {
+	if user.Email == "" || user.Password == "" {
 		myErr := utils.ErrorHandler(err, "username and password are required")
 		http.Error(w, myErr.Error(), http.StatusBadRequest)
 		return
 	}
 
-	givenPass := aUser.Password
-
-	aUser, err = databasehandler.LoginDBHandlerFunc(givenPass, aUser.Email)
+	user, err = databasehandler.LoginDBHandlerFunc(user.Email, user.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = utils.VerifyPassword(givenPass, aUser.Password)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	tokenString, err := utils.SignToken(aUser.Uuid, aUser.Role, aUser.Authentication)
+	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

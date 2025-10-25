@@ -9,6 +9,9 @@ func Router() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /signup", handlers.SignUpHandlerfunc)
+	mux.HandleFunc("POST /signup/otp", handlers.SignUpOtpfunc)
+	mux.HandleFunc("POST /authenticate", handlers.AuthenticationHandler)
+
 	mux.HandleFunc("POST /login", handlers.LoginHandlerFunc)
 	mux.HandleFunc("POST /logout", handlers.LogoutHandler)
 

@@ -53,25 +53,17 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		}
 
 		if claims["auth"] == "unverified" {
-			myErr := utils.ErrorHandler(err, "not verified")
-			http.Error(w, myErr.Error(), http.StatusUnauthorized)
-			return
-
+			if r.URL.Path != "/signup/otp" {
+				myErr := utils.ErrorHandler(err, "email not verified")
+				http.Error(w, myErr.Error(), http.StatusUnauthorized)
+				return
+			}
 		}
 
 		if r.URL.Path != "/authenticate" {
 			if claims["auth"] == "mail" {
-				myErr := utils.ErrorHandler(err, "mail verified not authenticated")
+				myErr := utils.ErrorHandler(err, "email verified but not authenticated")
 				http.Error(w, myErr.Error(), http.StatusUnauthorized)
-				return
-
-			}
-		}
-
-		if r.URL.Path == "/authenticate"{
-			if claims["auth"] == "verified" {
-				myErr := utils.ErrorHandler(err, "user already verified")
-				http.Error(w, myErr.Error(), http.StatusBadRequest)
 				return
 
 			}
