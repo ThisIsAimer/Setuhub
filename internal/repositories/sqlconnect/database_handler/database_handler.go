@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/go-mail/mail/v2"
-	"github.com/lib/pq"
 )
 
 // signup ------------------------------------------------------------------------------------------------------
@@ -25,6 +24,35 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 	defer db.Close()
 
+	// if email exists
+	var count int
+	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", newUser.Email).Scan(&count)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error running count query")
+	}
+
+	if count != 0 {
+		err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
+			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
+		)
+
+		if err != nil {
+			return models.User{}, utils.ErrorHandler(err, "user not found")
+		}
+
+		err = utils.VerifyPassword(newUser.ConfirmPassword, newUser.Password)
+
+		if err != nil {
+			return models.User{}, utils.ErrorHandler(err, "account exists but password wrong")
+		}
+		
+		newUser.Password = ""
+		newUser.ConfirmPassword = ""
+
+		return newUser, nil
+	}
+
+	// if user not exist
 	salt := make([]byte, 16)
 
 	_, err = rand.Read(salt)
@@ -39,19 +67,17 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 
 	otp := randOTP(6)
 
+	if newUser.Role == "" {
+		newUser.Role = "user"
+	}
+
 	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
 	result, err := db.Exec("INSERT INTO users(email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5)",
 		newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
 	)
 
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok {
-			if pqErr.Code == "23505" { // unique_violation
-				// handle duplicate email
-				return models.User{}, utils.ErrorHandler(err, "email already exist")
-			}
-			return models.User{}, utils.ErrorHandler(err, "error preparing statement")
-		}
+		return models.User{}, utils.ErrorHandler(err, "error preparing statement")
 	}
 
 	rowsAffected, _ := result.RowsAffected()
@@ -74,6 +100,7 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 
 	newUser.Password = ""
 	newUser.ConfirmPassword = ""
+
 	myMail := mail.NewMessage()
 
 	myMail.SetHeader("From", "ourapp@example.com") // replace email
