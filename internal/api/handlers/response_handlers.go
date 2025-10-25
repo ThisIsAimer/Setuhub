@@ -69,6 +69,86 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// otp -------------------------------------------------------------------------------------------
+func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no jwt", http.StatusUnauthorized)
+		return
+	}
+
+	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if auth != "" {
+
+		if auth == "mail" {
+			http.Error(w, "mail already verified", http.StatusBadRequest)
+			return
+		}
+
+		if auth == "verified" {
+			http.Error(w, "user is authenticated", http.StatusBadRequest)
+			return
+		}
+
+	}
+
+	var otp models.OTP
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&otp)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	user, err := databasehandler.SignupOtpDBHandler(uuid, otp.Otp)
+
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// send token as response or a cookie
+	http.SetCookie(w, &http.Cookie{
+		Name:     "Bearer",
+		Value:    tokenString,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		Expires:  time.Now().AddDate(0, 6, 0),
+		SameSite: http.SameSiteStrictMode,
+	})
+
+	response := struct {
+		Status string `json:"status"`
+	}{
+		Status: "Success",
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
 // login-------------------------------------------------------------------------------------------
 
 func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {

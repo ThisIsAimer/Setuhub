@@ -12,6 +12,10 @@ type User struct {
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
 }
 
+type OTP struct{
+	Otp string `json:"otp,omitempty" db:"otp,omitempty"`
+}
+
 type ResetPassword struct {
 	PasswordResetCode sql.NullString `json:"password_reset_code" db:"password_reset_code,omitempty"`
 	NewPassword       string         `json:"new_password,omitempty" db:"new_password,omitempty"`

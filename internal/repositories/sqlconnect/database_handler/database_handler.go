@@ -1,18 +1,19 @@
 package databasehandler
 
 import (
-	"hackathon/internal/models"
-	"hackathon/internal/repositories/sqlconnect"
-	"hackathon/pkg/utils"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"hackathon/internal/models"
+	"hackathon/internal/repositories/sqlconnect"
+	"hackathon/pkg/utils"
 	"os"
 	"strconv"
 	"time"
 
 	"github.com/go-mail/mail/v2"
+	"github.com/lib/pq"
 )
 
 // signup ------------------------------------------------------------------------------------------------------
@@ -36,27 +37,101 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "error encoding pass")
 	}
 
+	otp := randOTP(6)
+
 	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
-	result, err := db.Exec("INSERT INTO users(email, password, role) VALUES($1, $2, $3)", newUser.Email, newUser.Password, newUser.Role)
+	result, err := db.Exec("INSERT INTO users(email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5)",
+		newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
+	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error preparing statement")
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" { // unique_violation
+				// handle duplicate email
+				return models.User{}, utils.ErrorHandler(err, "email already exist")
+			}
+			return models.User{}, utils.ErrorHandler(err, "error preparing statement")
+		}
 	}
 
 	rowsAffected, _ := result.RowsAffected()
-
-	db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1",newUser.Email).Scan(
-		&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
-	)
-	newUser.Password = ""
-	newUser.ConfirmPassword = ""
 
 	if int(rowsAffected) == 0 {
 		return models.User{}, utils.ErrorHandler(err, "no rows effected")
 	}
 
+	err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
+		&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
+	)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "user not found")
+	}
+
+	if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
+		return newUser, nil
+	}
+
+	newUser.Password = ""
+	newUser.ConfirmPassword = ""
+	myMail := mail.NewMessage()
+
+	myMail.SetHeader("From", "ourapp@example.com") // replace email
+	myMail.SetHeader("To", newUser.Email)
+	myMail.SetHeader("Subject", "OTP For our app")
+	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
+
+	dialer := mail.NewDialer("localhost", 1025, "", "")
+	err = dialer.DialAndSend(myMail)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error sending mail")
+	}
+
 	return newUser, nil
 
+}
+
+// otp--------------------------------------------------------------------------------------------------------------------------
+
+func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var realOtp string
+
+	err = db.QueryRow("SELECT otp, authentication FROM users WHERE uuid = $1", otp).Scan(
+		&realOtp,
+	)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "user not found")
+	}
+
+	if otp != realOtp {
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
+	}
+
+	_, err = db.Exec("UPDATE users SET authentication = $1, otp = $2 WHERE uuid = $3", "mail", "")
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error setting token")
+	}
+
+	var user models.User
+
+	err = db.QueryRow("SELECT uuid, role, authentication FROM users WHERE uuid = $1", uuid).Scan(
+		&user.Uuid, &user.Role, &user.Authentication,
+	)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "user not found")
+	}
+
+	return user, nil
 }
 
 // login---------------------------------------------------------------------------------------------------------------------------
@@ -133,7 +208,7 @@ func ForgotPasswordDBHandler(email string) error {
 
 	myMail := mail.NewMessage()
 
-	myMail.SetHeader("From", "smth@school.com") // replace email
+	myMail.SetHeader("From", "ourapp@example.com") // replace email
 	myMail.SetHeader("To", email)
 	myMail.SetHeader("Subject", "Password reset link")
 	myMail.SetBody("text/plain", message)
