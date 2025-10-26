@@ -73,6 +73,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	fmt.Println(uuid)
 	if !ok {
 		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
 		return
@@ -98,7 +99,11 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	var otp models.OTP
+
+	otp := struct{
+		Otp string `json:"otp" db:"otp"`
+	}{}
+
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -109,7 +114,9 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := databasehandler.SignupOtpDBHandler(uuid, otp.Otp.String)
+	var user models.User
+
+	user, err = databasehandler.SignupOtpDBHandler(uuid, otp.Otp)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -426,4 +433,14 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+
+func Home (w http.ResponseWriter, r *http.Request){
+	_, err := w.Write([]byte("home!"))
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "couldnt write")
+		http.Error(w, myErr.Error(), http.StatusBadRequest)
+		return
+	}
 }

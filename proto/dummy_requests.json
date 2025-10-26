@@ -1,0 +1,7 @@
+[
+    {"email": "rudra@example.com", "password": "123", "confirm_password": "123"},
+    {"otp": "oZFwlG"},
+    {"email": "rudra@example.com"},
+    {"otp": "aeGMKY","new_password": "123", "confirm_password": "123"},
+    {"email": "rudra@example.com", "password": "123"}
+]

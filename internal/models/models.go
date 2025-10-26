@@ -11,6 +11,8 @@ type User struct {
 	Role            string `json:"role,omitempty" db:"role,omitempty"`
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
 
+	Otp sql.NullString `json:"otp" db:"otp"`
+
 	UserInfo
 }
 
@@ -20,10 +22,6 @@ type UserInfo struct {
 	Gender  string `json:"gender,omitempty" db:"gender,omitempty"`
 	Address string `json:"address,omitempty" db:"address,omitempty"`
 	Age     string `json:"age,omitempty" db:"age,omitempty"`
-}
-
-type OTP struct {
-	Otp sql.NullString `json:"otp" db:"otp"`
 }
 
 type ResetPassword struct {

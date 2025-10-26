@@ -2,6 +2,7 @@ package databasehandler
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"fmt"
 	"hackathon/internal/models"
 	"hackathon/internal/repositories/sqlconnect"
@@ -27,8 +28,9 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 
 	if count != 0 {
-		err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
-			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
+
+		err = db.QueryRow("SELECT uuid, email, password, role, authentication, otp FROM users WHERE email = $1", newUser.Email).Scan(
+			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication, &newUser.Otp,
 		)
 
 		if err != nil {
@@ -44,7 +46,27 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		newUser.Password = ""
 		newUser.ConfirmPassword = ""
 
+		if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
+			return newUser, nil
+		}
+
+		myMail := mail.NewMessage()
+
+		myMail.SetHeader("From", "ourapp@example.com") // replace email
+		myMail.SetHeader("To", newUser.Email)
+		myMail.SetHeader("Subject", "OTP For our app")
+		myMail.SetBody("text/plain", "your OTP for our app is: "+newUser.Otp.String)
+
+		dialer := mail.NewDialer("localhost", 1025, "", "")
+		err = dialer.DialAndSend(myMail)
+		if err != nil {
+			return models.User{}, utils.ErrorHandler(err, "error sending mail")
+		}
+
+		newUser.Otp.String = ""
+
 		return newUser, nil
+
 	}
 
 	// if user not exist
@@ -89,12 +111,12 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "user not found")
 	}
 
+	newUser.Password = ""
+	newUser.ConfirmPassword = ""
+
 	if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
 		return newUser, nil
 	}
-
-	newUser.Password = ""
-	newUser.ConfirmPassword = ""
 
 	myMail := mail.NewMessage()
 
@@ -123,13 +145,13 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 	}
 	defer db.Close()
 
-	var realOtp models.OTP
+	var user models.User
 
-	err = db.QueryRow("SELECT otp FROM users WHERE uuid = $1", otp).Scan(
-		&realOtp,
+	err = db.QueryRow("SELECT otp FROM users WHERE uuid = $1", uuid).Scan(
+		&user.Otp,
 	)
 
-	if !realOtp.Otp.Valid {
+	if !user.Otp.Valid {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
 	}
 
@@ -137,7 +159,7 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "user not found")
 	}
 
-	if otp != realOtp.Otp.String {
+	if otp != user.Otp.String {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
 	}
 
@@ -148,8 +170,6 @@ func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error setting token")
 	}
-
-	var user models.User
 
 	err = db.QueryRow("SELECT uuid, role, authentication FROM users WHERE uuid = $1", uuid).Scan(
 		&user.Uuid, &user.Role, &user.Authentication,
@@ -204,8 +224,8 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, password, role, authentication FROM users WHERE email = $1", email).Scan(
-		&user.Uuid, &user.Password, &user.Role, &user.Authentication,
+	err = db.QueryRow("SELECT uuid, password, role, authentication, otp FROM users WHERE email = $1", email).Scan(
+		&user.Uuid, &user.Password, &user.Role, &user.Authentication, &user.Otp,
 	)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
@@ -217,6 +237,25 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 	}
 
 	user.Password = ""
+
+	if user.Authentication == "mail" || user.Authentication == "verified" {
+		return user, nil
+	}
+
+	myMail := mail.NewMessage()
+
+	myMail.SetHeader("From", "ourapp@example.com") // replace email
+	myMail.SetHeader("To", user.Email)
+	myMail.SetHeader("Subject", "OTP For our app")
+	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
+
+	dialer := mail.NewDialer("localhost", 1025, "", "")
+	err = dialer.DialAndSend(myMail)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error sending mail")
+	}
+
+	user.Otp.String = ""
 
 	return user, nil
 }
@@ -232,7 +271,7 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, role, FROM users WHERE email = $1", email).Scan(
+	err = db.QueryRow("SELECT uuid, role FROM users WHERE email = $1", email).Scan(
 		&user.Uuid, &user.Role,
 	)
 
@@ -278,12 +317,12 @@ func ResetPassExecDBHandler(uuid, otp, password string) error {
 	}
 	defer db.Close()
 
-	var realOtp models.OTP
+	var realOtp sql.NullString
 
-	err = db.QueryRow(`Select uuid, role, authentication, otp FROM users WHERE uuid = $1`, uuid).
+	err = db.QueryRow(`Select otp FROM users WHERE uuid = $1`, uuid).
 		Scan(&realOtp)
 
-	if !realOtp.Otp.Valid {
+	if !realOtp.Valid {
 		return utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
 	}
 

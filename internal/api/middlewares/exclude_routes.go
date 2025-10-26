@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"net/http"
-	"strings"
 )
 
 func SkipJwtRoutes(jwtMiddleware func(http.Handler) http.Handler, excludedPaths ...string) func(http.Handler) http.Handler {
@@ -10,7 +9,7 @@ func SkipJwtRoutes(jwtMiddleware func(http.Handler) http.Handler, excludedPaths 
 
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			for _, paths := range excludedPaths {
-				if strings.HasPrefix(r.URL.Path, paths) {
+				if r.URL.Path == paths || r.URL.Path == paths+"/" {
 					next.ServeHTTP(w, r) // skipping jwt middleware
 					return
 				}
