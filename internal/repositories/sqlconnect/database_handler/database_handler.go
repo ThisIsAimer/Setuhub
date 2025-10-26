@@ -245,7 +245,7 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 	myMail := mail.NewMessage()
 
 	myMail.SetHeader("From", "ourapp@example.com") // replace email
-	myMail.SetHeader("To", user.Email)
+	myMail.SetHeader("To",email)
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
 
