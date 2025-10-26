@@ -18,6 +18,7 @@ type User struct {
 
 type UserInfo struct {
 	Aadhar  string `json:"aadhar,omitempty" db:"aadhar,omitempty"`
+	Name    string `json:"name,omitempty" db:"name,omitempty"`
 	Phone   string `json:"phone,omitempty" db:"phone,omitempty"`
 	Gender  string `json:"gender,omitempty" db:"gender,omitempty"`
 	Address string `json:"address,omitempty" db:"address,omitempty"`
@@ -28,4 +29,16 @@ type ResetPassword struct {
 	Otp             string `json:"otp,omitempty" db:"otp,omitempty"`
 	NewPassword     string `json:"new_password,omitempty" db:"new_password,omitempty"`
 	ConfirmPassword string `json:"confirm_password,omitempty" db:"confirm_password,omitempty"`
+}
+
+type Coordinates struct {
+	Latitude  float64 `json:"latitude,omitempty" db:"latitude,omitempty"`
+	Longitude float64 `json:"longitude,omitempty" db:"longitude,omitempty"`
+}
+
+type NearbyUser struct {
+	Uuid     string  `json:"uuid,omitempty" db:"uuid,omitempty"`
+	Name     string  `json:"name,omitempty" db:"name,omitempty"`
+	Phone    string  `json:"phone,omitempty" db:"phone,omitempty"`
+	Distance float64 `json:"distance,omitempty" db:"distance,omitempty"`
 }

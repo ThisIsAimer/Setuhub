@@ -11,6 +11,17 @@ import (
 	"hackathon/pkg/utils"
 )
 
+// home for test ---------------------------------------------------------------------------------------------------------
+
+func Home(w http.ResponseWriter, r *http.Request) {
+	_, err := w.Write([]byte("home!"))
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "couldnt write")
+		http.Error(w, myErr.Error(), http.StatusBadRequest)
+		return
+	}
+}
+
 //Sign in ----------------------------------------------------------------------------------------------------------------------------
 
 func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
@@ -99,11 +110,9 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-
-	otp := struct{
+	otp := struct {
 		Otp string `json:"otp" db:"otp"`
 	}{}
-
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
@@ -435,12 +444,56 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// stores location-----------------------------------------------------------------------------------------------------
 
-func Home (w http.ResponseWriter, r *http.Request){
-	_, err := w.Write([]byte("home!"))
+func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	var coordinates models.Coordinates
+
+	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
+
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&coordinates)
+
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "couldnt write")
+		myErr := utils.ErrorHandler(err, "invalid json body")
 		http.Error(w, myErr.Error(), http.StatusBadRequest)
 		return
 	}
+
+	err = checkEmptyField(coordinates)
+
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, " one or user info fields empty").Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = databasehandler.UpdateCoordinates(uuid, coordinates)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	responce := struct {
+		Status string `json:"Status"`
+	}{
+		Status: "success",
+	}
+
+	err = json.NewEncoder(w).Encode(responce)
+
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "error encoding json")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }

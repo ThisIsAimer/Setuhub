@@ -8,6 +8,10 @@ import (
 func Router() *http.ServeMux {
 	mux := http.NewServeMux()
 
+	//test----------------------------------------------------------------------------------------
+	mux.HandleFunc("GET /home", handlers.Home)
+
+	// auth crud-----------------------------------------------------------------------------------
 	mux.HandleFunc("POST /signup", handlers.SignUpHandlerfunc)
 	mux.HandleFunc("POST /signup/otp", handlers.SignUpOtpfunc)
 	mux.HandleFunc("POST /authenticate", handlers.AuthenticationHandler)
@@ -18,7 +22,8 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /login/forgotpassword", handlers.ForgotPassHandler)
 	mux.HandleFunc("POST /login/forgotpassword/otp", handlers.ResetPassHandler)
 
-	mux.HandleFunc("GET /home", handlers.Home)
+	// get location---------------------------------------------------------------------------------
+	mux.HandleFunc("post /coordinates", handlers.UpdateCoordinatesHandlerFunc)
 
 	return mux
 }

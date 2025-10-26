@@ -192,8 +192,8 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE users SET aadhar = $1, phone = $2, gender = $3, address = $4, age = $5, authentication = $6 WHERE uuid = $7",
-		userInfo.Aadhar, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.Age, "verified", uuid,
+	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2 phone = $3, gender = $4, address = $5, age = $6, authentication = $7 WHERE uuid = $8",
+		userInfo.Aadhar, userInfo.Name, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.Age, "verified", uuid,
 	)
 
 	if err != nil {
@@ -245,7 +245,7 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 	myMail := mail.NewMessage()
 
 	myMail.SetHeader("From", "ourapp@example.com") // replace email
-	myMail.SetHeader("To",email)
+	myMail.SetHeader("To", email)
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
 
@@ -347,6 +347,27 @@ func ResetPassExecDBHandler(uuid, otp, password string) error {
 
 	if err != nil {
 		return utils.ErrorHandler(err, "error updating password")
+	}
+
+	return nil
+}
+
+// storesLocation ---------------------------------------------------------------------------------------------------
+
+func UpdateCoordinates(uuid string, coordinates models.Coordinates) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`UPDATE users SET coordinates = ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography WHERE uuid = $3;`,
+		coordinates.Longitude, coordinates.Latitude, uuid,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error updating coordinates")
 	}
 
 	return nil
