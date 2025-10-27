@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"fmt"
 	"hackathon/pkg/utils"
 	"log"
 	"net/http"
@@ -91,7 +90,6 @@ func JwtMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		fmt.Println("jwt", claims["uuid"])
 		ctx := context.WithValue(r.Context(), utils.JwtKey("uuid"), claims["uuid"])
 		ctx = context.WithValue(ctx, utils.JwtKey("role"), claims["role"])
 		ctx = context.WithValue(ctx, utils.JwtKey("auth"), claims["auth"])

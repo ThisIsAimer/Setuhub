@@ -98,7 +98,7 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 
 	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
-	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5 $6)",
+	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5, $6)",
 		newUser.Uuid, newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
 	)
 
@@ -201,12 +201,12 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2 phone = $3, gender = $4, address = $5, age = $6, authentication = $7 WHERE uuid = $8",
+	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2, phone = $3, gender = $4, address = $5, age = $6, authentication = $7 WHERE uuid = $8",
 		userInfo.Aadhar, userInfo.Name, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.Age, "verified", uuid,
 	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error setting token")
+		return models.User{}, utils.ErrorHandler(err, "error updating database")
 	}
 
 	var user models.User
@@ -237,6 +237,9 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 		&user.Uuid, &user.Password, &user.Role, &user.Authentication, &user.Otp,
 	)
 	if err != nil {
+		if err == sql.ErrNoRows{
+			return models.User{}, utils.ErrorHandler(err, "email doesnt exists in database")
+		}
 		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
 	}
 

@@ -90,7 +90,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
-	fmt.Println(uuid)
+	
 	if !ok {
 		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
 		return

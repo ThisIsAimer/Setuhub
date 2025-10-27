@@ -23,7 +23,7 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /login/forgotpassword/otp", handlers.ResetPassHandler)
 
 	// get location---------------------------------------------------------------------------------
-	mux.HandleFunc("post /coordinates", handlers.UpdateCoordinatesHandlerFunc)
+	mux.HandleFunc("POST /coordinates", handlers.UpdateCoordinatesHandlerFunc)
 
 	return mux
 }
