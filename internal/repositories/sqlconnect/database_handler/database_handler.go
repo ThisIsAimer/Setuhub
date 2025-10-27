@@ -2,11 +2,13 @@ package databasehandler
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"hackathon/internal/models"
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
+	"os"
 
 	"github.com/go-mail/mail/v2"
 )
@@ -50,14 +52,18 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 			return newUser, nil
 		}
 
+		myEmail := os.Getenv("EMAIL")
+		app_pass := os.Getenv("APP_PASSWORD")
+
 		myMail := mail.NewMessage()
 
-		myMail.SetHeader("From", "ourapp@example.com") // replace email
+		myMail.SetHeader("From", myEmail) // replace email
 		myMail.SetHeader("To", newUser.Email)
 		myMail.SetHeader("Subject", "OTP For our app")
 		myMail.SetBody("text/plain", "your OTP for our app is: "+newUser.Otp.String)
 
-		dialer := mail.NewDialer("localhost", 1025, "", "")
+		dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+		dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
 		err = dialer.DialAndSend(myMail)
 		if err != nil {
 			return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -127,14 +133,18 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return newUser, nil
 	}
 
+	myEmail := os.Getenv("EMAIL")
+	app_pass := os.Getenv("APP_PASSWORD")
+
 	myMail := mail.NewMessage()
 
-	myMail.SetHeader("From", "ourapp@example.com") // replace email
+	myMail.SetHeader("From", myEmail) // replace email
 	myMail.SetHeader("To", newUser.Email)
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
 
-	dialer := mail.NewDialer("localhost", 1025, "", "")
+	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -237,7 +247,7 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 		&user.Uuid, &user.Password, &user.Role, &user.Authentication, &user.Otp,
 	)
 	if err != nil {
-		if err == sql.ErrNoRows{
+		if err == sql.ErrNoRows {
 			return models.User{}, utils.ErrorHandler(err, "email doesnt exists in database")
 		}
 		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
@@ -254,14 +264,18 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 		return user, nil
 	}
 
+	myEmail := os.Getenv("EMAIL")
+	app_pass := os.Getenv("APP_PASSWORD")
+
 	myMail := mail.NewMessage()
 
-	myMail.SetHeader("From", "ourapp@example.com") // replace email
+	myMail.SetHeader("From", myEmail) // replace email
 	myMail.SetHeader("To", email)
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
 
-	dialer := mail.NewDialer("localhost", 1025, "", "")
+	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -303,16 +317,18 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "error setting token")
 	}
 
-	message := fmt.Sprintf("forgot your password for <our app>? OTP to reset password is: %s", otp)
+	myEmail := os.Getenv("EMAIL")
+	app_pass := os.Getenv("APP_PASSWORD")
 
 	myMail := mail.NewMessage()
 
-	myMail.SetHeader("From", "ourapp@example.com") // replace email
+	myMail.SetHeader("From", myEmail) // replace email
 	myMail.SetHeader("To", email)
-	myMail.SetHeader("Subject", "Password reset otp")
-	myMail.SetBody("text/plain", message)
+	myMail.SetHeader("Subject", "OTP For our app")
+	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
 
-	dialer := mail.NewDialer("localhost", 1025, "", "")
+	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
