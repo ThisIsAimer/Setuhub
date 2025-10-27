@@ -69,6 +69,15 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 
 	}
 
+	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE uuid = $1", newUser.Uuid).Scan(&count)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+
+	if count != 0 {
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("username already exists in database"), "username already exists")
+	}
+
 	// if user not exist
 	salt := make([]byte, 16)
 
@@ -89,8 +98,8 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 
 	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
-	result, err := db.Exec("INSERT INTO users(email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5)",
-		newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
+	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5 $6)",
+		newUser.Uuid, newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
 	)
 
 	if err != nil {

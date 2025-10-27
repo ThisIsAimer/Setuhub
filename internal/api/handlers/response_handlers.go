@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"hackathon/internal/models"
@@ -37,7 +38,12 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if newUser.Password != newUser.ConfirmPassword {
+	if strings.TrimSpace(newUser.Email) == "" || strings.TrimSpace(newUser.Uuid) == "" {
+		http.Error(w, utils.ErrorHandler(fmt.Errorf("please send all required fields"), "please send all required fields").Error(), http.StatusBadRequest)
+		return
+	}
+
+	if newUser.Password != newUser.ConfirmPassword && strings.TrimSpace(newUser.Password) == "" {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("passwords dont match"), "passwords dont match").Error(), http.StatusBadRequest)
 		return
 	}
