@@ -1,7 +1,5 @@
 package models
 
-import "database/sql"
-
 type User struct {
 	Uuid            string `json:"uuid,omitempty" db:"uuid,omitempty"`
 	Email           string `json:"email,omitempty" db:"email,omitempty"`
@@ -10,9 +8,6 @@ type User struct {
 	PhoneNumber     string `json:"phone_number,omitempty" db:"phone_number,omitempty"`
 	Role            string `json:"role,omitempty" db:"role,omitempty"`
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
-
-	Otp sql.NullString `json:"otp" db:"otp"`
-
 	UserInfo
 }
 

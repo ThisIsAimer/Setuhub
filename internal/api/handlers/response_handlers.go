@@ -38,7 +38,11 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(newUser.Email) == "" || strings.TrimSpace(newUser.Uuid) == "" {
+	newUser.Uuid = strings.TrimSpace(newUser.Uuid)
+	newUser.Email = strings.TrimSpace(newUser.Email)
+	newUser.Password = strings.TrimSpace(newUser.Password)
+
+	if newUser.Email == "" || newUser.Uuid == "" {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("please send all required fields"), "please send all required fields").Error(), http.StatusBadRequest)
 		return
 	}
@@ -50,7 +54,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(newUser.Password) == "" {
+	if newUser.Password == "" {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("password empty"), "password cannot be empty").Error(), http.StatusBadRequest)
 		return
 	}
@@ -119,7 +123,14 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if auth != "" {
+	role, ok := r.Context().Value(utils.JwtKey("role")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	if auth != "unverified" {
 
 		if auth == "mail" {
 			http.Error(w, "mail already verified", http.StatusBadRequest)
@@ -148,7 +159,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 
-	user, err = databasehandler.SignupOtpDBHandler(uuid, otp.Otp)
+	user, err = databasehandler.SignupOtpDBHandler(uuid, role, otp.Otp)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

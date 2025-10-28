@@ -1,13 +1,18 @@
 package databasehandler
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"hackathon/internal/models"
+	nosql "hackathon/internal/repositories/no_sql"
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
+	"time"
 )
+
+var ctx = context.Background()
 
 // signup ------------------------------------------------------------------------------------------------------
 func SignUpDBHandler(newUser models.User) (models.User, error) {
@@ -18,6 +23,14 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 	defer db.Close()
 
+	rdb, err := nosql.RedisCliant()
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)")
+	}
+
+	defer rdb.Close()
+
 	// if email exists
 	var count int
 	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", newUser.Email).Scan(&count)
@@ -27,8 +40,8 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 
 	if count != 0 {
 
-		err = db.QueryRow("SELECT uuid, email, password, role, authentication, otp FROM users WHERE email = $1", newUser.Email).Scan(
-			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication, &newUser.Otp,
+		err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
+			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
 		)
 
 		if err != nil {
@@ -44,17 +57,6 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		newUser.Password = ""
 		newUser.ConfirmPassword = ""
 
-		if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
-			return newUser, nil
-		}
-
-		err = sendOTP(newUser.Email, newUser.Otp.String)
-		if err != nil {
-			return models.User{}, err
-		}
-
-		newUser.Otp.String = ""
-
 		return newUser, nil
 
 	}
@@ -68,7 +70,78 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("username already exists in database"), "username already exists")
 	}
 
-	// if user not exist
+	otp := randOTP(6)
+
+	if newUser.Role == "" {
+		newUser.Role = "user"
+	}
+
+	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
+	key := "data:" + newUser.Uuid
+
+	err = rdb.HSet(ctx, key,
+		"otp", otp,
+		"email", newUser.Email,
+		"pass", newUser.Password,
+	).Err()
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)")
+	}
+
+	err = rdb.Expire(ctx, key, 7*time.Minute).Err()
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)")
+	}
+
+	err = sendOTP(newUser.Email, otp)
+	if err != nil {
+		return models.User{}, err
+	}
+
+	newUser.Password = ""
+	newUser.ConfirmPassword = ""
+
+	newUser.Authentication = "unverified"
+
+	return newUser, nil
+
+}
+
+// otp--------------------------------------------------------------------------------------------------------------------------
+
+func SignupOtpDBHandler(uuid, role, otp string) (models.User, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	rdb, err := nosql.RedisCliant()
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)")
+	}
+
+	defer rdb.Close()
+
+	var user models.User
+
+	key := "data:" + uuid
+
+	vals, _ := rdb.HGetAll(ctx, key).Result()
+
+	user.Email = vals["email"]
+	user.Password = vals["pass"]
+	realOtp := vals["otp"]
+
+	// checking otp ---------------------------------------------------------------------------------
+	if otp != realOtp {
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
+	}
+
+	// encoding password-----------------------------------------------------------------------------
 	salt := make([]byte, 16)
 
 	_, err = rand.Read(salt)
@@ -76,25 +149,13 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "error making salt")
 	}
 
-	newUser.Password, err = utils.PassEncoder(newUser.Password, salt)
+	user.Password, err = utils.PassEncoder(user.Password, salt)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error encoding pass")
 	}
 
-	otp := randOTP(6)
-
-	err = sendOTP(newUser.Email, otp)
-	if err != nil {
-		return models.User{}, err
-	}
-
-	if newUser.Role == "" {
-		newUser.Role = "user"
-	}
-
-	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
-	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, otp, authentication) VALUES($1, $2, $3, $4, $5, $6)",
-		newUser.Uuid, newUser.Email, newUser.Password, newUser.Role, otp, "unverified",
+	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, authentication) VALUES($1, $2, $3, $4, $5)",
+		uuid, user.Email, user.Password, role, "mail",
 	)
 
 	if err != nil {
@@ -107,67 +168,11 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "no rows effected")
 	}
 
-	err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
-		&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
-	)
-
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "user not found")
-	}
-
-	newUser.Password = ""
-	newUser.ConfirmPassword = ""
-
-	if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
-		return newUser, nil
-	}
-
-	return newUser, nil
-
-}
-
-// otp--------------------------------------------------------------------------------------------------------------------------
-
-func SignupOtpDBHandler(uuid, otp string) (models.User, error) {
-
-	db, err := sqlconnect.ConnectDB()
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
-	}
-	defer db.Close()
-
-	var user models.User
-
-	err = db.QueryRow("SELECT otp FROM users WHERE uuid = $1", uuid).Scan(
-		&user.Otp,
-	)
-
-	if !user.Otp.Valid {
-		return models.User{}, utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
-	}
-
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "user not found")
-	}
-
-	if otp != user.Otp.String {
-		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp")
-	}
-
-	_, err = db.Exec("UPDATE users SET authentication = $1, otp = NULL WHERE uuid = $2",
-		"mail", uuid,
-	)
-
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error setting token")
-	}
-
 	err = db.QueryRow("SELECT uuid, role, authentication FROM users WHERE uuid = $1", uuid).Scan(
 		&user.Uuid, &user.Role, &user.Authentication,
 	)
-
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "user not found")
+		return models.User{}, utils.ErrorHandler(err, "unable to insert values")
 	}
 
 	return user, nil
@@ -215,9 +220,10 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, password, role, authentication, otp FROM users WHERE email = $1", email).Scan(
-		&user.Uuid, &user.Password, &user.Role, &user.Authentication, &user.Otp,
+	err = db.QueryRow("SELECT uuid, password, role, authentication, FROM users WHERE email = $1", email).Scan(
+		&user.Uuid, &user.Password, &user.Role, &user.Authentication,
 	)
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return models.User{}, utils.ErrorHandler(err, "email doesnt exists in database")
@@ -232,17 +238,6 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 
 	user.Password = ""
 
-	if user.Authentication == "mail" || user.Authentication == "verified" {
-		return user, nil
-	}
-
-	err = sendOTP(user.Email, user.Otp.String)
-	if err != nil {
-		return models.User{}, err
-	}
-
-	user.Otp.String = ""
-
 	return user, nil
 }
 
@@ -254,6 +249,14 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
 	}
 	defer db.Close()
+
+	rdb, err := nosql.RedisCliant()
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)")
+	}
+
+	defer rdb.Close()
 
 	var user models.User
 
@@ -269,12 +272,12 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 
 	otp := randOTP(6)
 
-	_, err = db.Exec("UPDATE users SET otp = $1 WHERE uuid = $2",
-		otp, user.Uuid,
-	)
+	key := "data:" + user.Uuid
+
+	err = rdb.Set(ctx, key, otp, 7*time.Minute).Err()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error setting token")
+		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)")
 	}
 
 	err = sendOTP(email, otp)
@@ -293,19 +296,27 @@ func ResetPassExecDBHandler(uuid, otp, password string) error {
 	}
 	defer db.Close()
 
-	var realOtp sql.NullString
+	rdb, err := nosql.RedisCliant()
 
-	err = db.QueryRow(`Select otp FROM users WHERE uuid = $1`, uuid).
-		Scan(&realOtp)
-
-	if !realOtp.Valid {
-		return utils.ErrorHandler(fmt.Errorf("no Otp present in database"), "no Otp present in database")
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to (rdb)")
 	}
+
+	defer rdb.Close()
+
+	key := "data:" + uuid
+
+	realOtp, err := rdb.Get(ctx, key).Result()
 
 	if err != nil {
 		return utils.ErrorHandler(err, "invalid or expired reset code")
 	}
 
+	if realOtp != otp {
+		return utils.ErrorHandler(err, "otp doesnt match")
+	}
+
+	// encoding new password
 	salt := make([]byte, 16)
 
 	_, err = rand.Read(salt)
