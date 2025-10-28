@@ -1,12 +1,12 @@
 package databasehandler
 
 import (
-	"crypto/tls"
-	"hackathon/pkg/utils"
+	"fmt"
 	"math/rand"
 	"os"
 
-	mail "gopkg.in/gomail.v2"
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 func randOTP(n int) string {
@@ -19,21 +19,25 @@ func randOTP(n int) string {
 }
 
 func sendOTP(to, otp string) error {
-	from := os.Getenv("EMAIL")
-	appPass := os.Getenv("APP_PASSWORD") // <-- replace with your REAL 16-char Gmail App Password
+	fromEmail := os.Getenv("FROM_EMAIL")    // e.g. rudra@gmail.com (verified in SendGrid)
+	fromName := os.Getenv("FROM_NAME")      // e.g. Our Hackathon App
+	apiKey := os.Getenv("SENDGRID_API_KEY") // from SendGrid dashboard
 
-	m := mail.NewMessage()
-	m.SetHeader("From", from)
-	m.SetHeader("To", to)
-	m.SetHeader("Subject", "otp for our app")
-	m.SetBody("text/plain", "your otp is:"+otp)
+	from := mail.NewEmail(fromName, fromEmail)
+	toE := mail.NewEmail("", to)
 
-	d := mail.NewDialer("smtp.gmail.com", 465, from, appPass)
-	d.SSL = true
-	d.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
+	subject := "OTP for our app"
+	text := "Your OTP is: " + otp
 
-	if err := d.DialAndSend(m); err != nil {
-		return utils.ErrorHandler(err, "error sending email")
+	msg := mail.NewSingleEmail(from, subject, toE, text, "")
+	client := sendgrid.NewSendClient(apiKey)
+
+	resp, err := client.Send(msg)
+	if err != nil {
+		return fmt.Errorf("sendgrid send failed: %w", err)
+	}
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body)
 	}
 
 	return nil
