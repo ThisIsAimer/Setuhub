@@ -81,6 +81,9 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	
+	w.Header().Set("Content-Type", "application/json")
+
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "Bearer",
@@ -171,6 +174,8 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
 
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
@@ -442,7 +447,16 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, myErr.Error(), http.StatusBadRequest)
 		return
 	}
-	if req.ConfirmPassword == "" || req.NewPassword == "" {
+
+	req.NewPassword = strings.TrimSpace(req.NewPassword)
+
+	if len(req.NewPassword) < 6 {
+		myErr := utils.ErrorHandler(fmt.Errorf("password less then 6 characters"), "password must have atleast 6 characters")
+		http.Error(w, myErr.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if  req.NewPassword == "" {
 		myErr := utils.ErrorHandler(fmt.Errorf("new or confirm passwords are empty"), "empty json fields")
 		http.Error(w, myErr.Error(), http.StatusBadRequest)
 		return
@@ -516,6 +530,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	responce := struct {
 		Status string `json:"Status"`
 	}{

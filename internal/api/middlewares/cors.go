@@ -2,27 +2,15 @@ package middlewares
 
 import (
 	"net/http"
-	"os"
-	"strings"
 )
 
 // cross-origine resource sharing
 func Cors(next http.Handler) http.Handler {
 
-	// getting origins from env
-	var allowedOrigins = strings.Split(os.Getenv("ALLOWED_ORIGINS"), ",")
-
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
-
-		if originVerification(origin, allowedOrigins) {
-			w.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			http.Error(w, "not allowed by Cors", http.StatusForbidden)
-			return
-		}
 
 		// Set other CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE")
