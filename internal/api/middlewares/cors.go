@@ -1,7 +1,10 @@
 package middlewares
 
 import (
+	"fmt"
+	"hackathon/pkg/utils"
 	"net/http"
+	"os"
 )
 
 // cross-origine resource sharing
@@ -17,6 +20,14 @@ func Cors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Max-Age", "3600")
 
+		RealappSecret := os.Getenv("APP_SECRET")
+		appSecret := r.Header.Get("X-App-Secret")
+
+		if RealappSecret != appSecret {
+			http.Error(w, utils.ErrorHandler(fmt.Errorf("wrong app Secret"),"not allowed by cors").Error(), http.StatusBadRequest)
+			return 
+		}
+
 		// method options is for a preflight check
 		//A preflight check refers to a preliminary request made by browsers when using CORS (Cross-Origin Resource Sharing) to ensure that the actual request is safe to send.
 		if r.Method == http.MethodOptions {
@@ -26,13 +37,4 @@ func Cors(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 
-}
-
-func originVerification(origin string, allowedOrigins []string) bool {
-	for _, value := range allowedOrigins {
-		if value == origin {
-			return true
-		}
-	}
-	return false
 }
