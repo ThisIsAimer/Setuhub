@@ -37,7 +37,7 @@ func sendOTP(to, otp string) error {
 
 	subject := "Your OTP code"
 	plain := fmt.Sprintf(
-		"Your OTP is: %s\nPlease enter thin in our app\n\n%s",
+		"Your OTP is: %s\nPlease enter the otp in our app\nOTP expires in 7 mins\n\n%s",
 		otp, fromName,
 	)
 

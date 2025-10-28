@@ -158,6 +158,9 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, error) {
 		uuid, user.Email, user.Password, role, "mail",
 	)
 
+
+	user.Password = ""
+
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error preparing statement")
 	}
@@ -220,7 +223,7 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, password, role, authentication, FROM users WHERE email = $1", email).Scan(
+	err = db.QueryRow("SELECT uuid, password, role, authentication FROM users WHERE email = $1", email).Scan(
 		&user.Uuid, &user.Password, &user.Role, &user.Authentication,
 	)
 
@@ -272,7 +275,7 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 
 	otp := randOTP(6)
 
-	key := "data:" + user.Uuid
+	key := "otp:" + user.Uuid
 
 	err = rdb.Set(ctx, key, otp, 7*time.Minute).Err()
 
@@ -304,7 +307,7 @@ func ResetPassExecDBHandler(uuid, otp, password string) error {
 
 	defer rdb.Close()
 
-	key := "data:" + uuid
+	key := "otp:" + uuid
 
 	realOtp, err := rdb.Get(ctx, key).Result()
 
@@ -328,7 +331,7 @@ func ResetPassExecDBHandler(uuid, otp, password string) error {
 		return err
 	}
 
-	_, err = db.Exec(`UPDATE users SET password = $1, otp = NULL WHERE uuid = $2`,
+	_, err = db.Exec(`UPDATE users SET password = $1 WHERE uuid = $2`,
 		new_pass, uuid,
 	)
 
