@@ -43,7 +43,17 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if newUser.Password != newUser.ConfirmPassword && strings.TrimSpace(newUser.Password) == "" {
+	if strings.TrimSpace(newUser.Password) == "" {
+		http.Error(w, utils.ErrorHandler(fmt.Errorf("password empty"), "password cannot be empty").Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(newUser.Password) < 6 {
+		http.Error(w, utils.ErrorHandler(fmt.Errorf("password too short"), "password must be at least 6 characters").Error(), http.StatusBadRequest)
+		return
+	}
+
+	if newUser.Password != newUser.ConfirmPassword {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("passwords dont match"), "passwords dont match").Error(), http.StatusBadRequest)
 		return
 	}
@@ -90,7 +100,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
-	
+
 	if !ok {
 		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
 		return
