@@ -327,7 +327,7 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	responce := struct {
-		Status string `json:"Status"`
+		Status string `json:"status"`
 	}{
 		Status: "success",
 	}
@@ -357,7 +357,19 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	w.Write([]byte("Message: logged out successfully"))
+	responce := struct {
+		Status string `json:"status"`
+	}{
+		Status: "logged out successfully",
+	}
+
+	err := json.NewEncoder(w).Encode(responce)
+
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "error encoding json")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // forget Password----------------------------------------------------------------------------------------------
@@ -477,7 +489,7 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	responce := struct {
-		Status string `json:"message"`
+		Status string `json:"status"`
 	}{
 		Status: "password updated successfully, go login with the new password",
 	}
@@ -532,7 +544,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	responce := struct {
-		Status string `json:"Status"`
+		Status string `json:"status"`
 	}{
 		Status: "success",
 	}
