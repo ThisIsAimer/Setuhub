@@ -9,6 +9,7 @@ import (
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
 	"os"
+	"time"
 
 	"github.com/go-mail/mail/v2"
 )
@@ -62,8 +63,9 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 		myMail.SetHeader("Subject", "OTP For our app")
 		myMail.SetBody("text/plain", "your OTP for our app is: "+newUser.Otp.String)
 
-		dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+		dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
 		dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
+		dialer.Timeout = 10 * time.Second
 		err = dialer.DialAndSend(myMail)
 		if err != nil {
 			return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -143,8 +145,9 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
 
-	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
 	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
+	dialer.Timeout = 10 * time.Second
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -274,8 +277,9 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
 
-	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
 	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
+	dialer.Timeout = 10 * time.Second
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
@@ -327,8 +331,9 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 	myMail.SetHeader("Subject", "OTP For our app")
 	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
 
-	dialer := mail.NewDialer("smtp.gmail.com", 587, myEmail, app_pass)
+	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
 	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
+	dialer.Timeout = 10 * time.Second
 	err = dialer.DialAndSend(myMail)
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error sending mail")
