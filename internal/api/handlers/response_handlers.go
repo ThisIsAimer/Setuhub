@@ -82,7 +82,6 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	
-	w.Header().Set("Content-Type", "application/json")
 
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
@@ -94,6 +93,8 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().AddDate(0, 6, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
+
+	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
 		Status string `json:"status"`
@@ -175,7 +176,6 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
@@ -187,6 +187,8 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().AddDate(0, 6, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
+
+	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
 		Status string `json:"status"`
@@ -265,6 +267,9 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().AddDate(0, 6, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
+	
+	
+	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
 		Status string `json:"status"`
