@@ -2,7 +2,9 @@ package handlers
 
 import (
 	"fmt"
+	"hackathon/pkg/utils"
 	"reflect"
+	"regexp"
 )
 
 func checkEmptyField(modle any) error {
@@ -18,5 +20,14 @@ func checkEmptyField(modle any) error {
 
 	}
 
+	return nil
+}
+
+func isValidEmailFormat(email string) error {
+	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+	if !emailRegex.MatchString(email){
+		return utils.ErrorHandler(fmt.Errorf("email format wrong"), "invalid email")
+	}
 	return nil
 }

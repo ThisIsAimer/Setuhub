@@ -43,6 +43,13 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = isValidEmailFormat(newUser.Email)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	if strings.TrimSpace(newUser.Password) == "" {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("password empty"), "password cannot be empty").Error(), http.StatusBadRequest)
 		return

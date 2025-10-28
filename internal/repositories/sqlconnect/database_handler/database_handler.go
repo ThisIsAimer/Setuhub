@@ -2,16 +2,11 @@ package databasehandler
 
 import (
 	"crypto/rand"
-	"crypto/tls"
 	"database/sql"
 	"fmt"
 	"hackathon/internal/models"
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
-	"os"
-	"time"
-
-	"github.com/go-mail/mail/v2"
 )
 
 // signup ------------------------------------------------------------------------------------------------------
@@ -53,22 +48,9 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 			return newUser, nil
 		}
 
-		myEmail := os.Getenv("EMAIL")
-		app_pass := os.Getenv("APP_PASSWORD")
-
-		myMail := mail.NewMessage()
-
-		myMail.SetHeader("From", myEmail) // replace email
-		myMail.SetHeader("To", newUser.Email)
-		myMail.SetHeader("Subject", "OTP For our app")
-		myMail.SetBody("text/plain", "your OTP for our app is: "+newUser.Otp.String)
-
-		dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
-		dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
-		dialer.Timeout = 10 * time.Second
-		err = dialer.DialAndSend(myMail)
+		err = sendOTP(newUser.Email, newUser.Otp.String)
 		if err != nil {
-			return models.User{}, utils.ErrorHandler(err, "error sending mail")
+			return models.User{}, err
 		}
 
 		newUser.Otp.String = ""
@@ -100,6 +82,11 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 	}
 
 	otp := randOTP(6)
+
+	err = sendOTP(newUser.Email, otp)
+	if err != nil {
+		return models.User{}, err
+	}
 
 	if newUser.Role == "" {
 		newUser.Role = "user"
@@ -133,24 +120,6 @@ func SignUpDBHandler(newUser models.User) (models.User, error) {
 
 	if newUser.Authentication == "mail" || newUser.Authentication == "verified" {
 		return newUser, nil
-	}
-
-	myEmail := os.Getenv("EMAIL")
-	app_pass := os.Getenv("APP_PASSWORD")
-
-	myMail := mail.NewMessage()
-
-	myMail.SetHeader("From", myEmail) // replace email
-	myMail.SetHeader("To", newUser.Email)
-	myMail.SetHeader("Subject", "OTP For our app")
-	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
-
-	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
-	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
-	dialer.Timeout = 10 * time.Second
-	err = dialer.DialAndSend(myMail)
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error sending mail")
 	}
 
 	return newUser, nil
@@ -267,22 +236,9 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, error) {
 		return user, nil
 	}
 
-	myEmail := os.Getenv("EMAIL")
-	app_pass := os.Getenv("APP_PASSWORD")
-
-	myMail := mail.NewMessage()
-
-	myMail.SetHeader("From", myEmail) // replace email
-	myMail.SetHeader("To", email)
-	myMail.SetHeader("Subject", "OTP For our app")
-	myMail.SetBody("text/plain", "your OTP for our app is: "+user.Otp.String)
-
-	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
-	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
-	dialer.Timeout = 10 * time.Second
-	err = dialer.DialAndSend(myMail)
+	err = sendOTP(user.Email, user.Otp.String)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error sending mail")
+		return models.User{}, err
 	}
 
 	user.Otp.String = ""
@@ -321,22 +277,9 @@ func ForgotPasswordDBHandler(email string) (models.User, error) {
 		return models.User{}, utils.ErrorHandler(err, "error setting token")
 	}
 
-	myEmail := os.Getenv("EMAIL")
-	app_pass := os.Getenv("APP_PASSWORD")
-
-	myMail := mail.NewMessage()
-
-	myMail.SetHeader("From", myEmail) // replace email
-	myMail.SetHeader("To", email)
-	myMail.SetHeader("Subject", "OTP For our app")
-	myMail.SetBody("text/plain", "your OTP for our app is: "+otp)
-
-	dialer := mail.NewDialer("smtp.gmail.com", 465, myEmail, app_pass)
-	dialer.TLSConfig = &tls.Config{ServerName: "smtp.gmail.com"}
-	dialer.Timeout = 10 * time.Second
-	err = dialer.DialAndSend(myMail)
+	err = sendOTP(email, otp)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error sending mail")
+		return models.User{}, err
 	}
 
 	return user, nil
