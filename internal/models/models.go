@@ -47,18 +47,25 @@ type NearbyUser struct {
 type Post struct {
 	PostUUID string `json:"post_uuid" db:"post_uuid"`
 	UUID     string `json:"uuid" db:"uuid"` // FK to users(uuid)
+	Name    string `json:"name,omitempty" db:"name,omitempty"`
 
-	Type        string `json:"type" db:"type"`
-	Title       string `json:"title" db:"title"`
-	Description string `json:"description" db:"description"`
-	BloodGroup  string `json:"blood_group" db:"blood_group"`
+	Type        string `json:"type,omitempty" db:"type,omitempty"`
+	Title       string `json:"title,omitempty" db:"title,omitempty"`
+	Description string `json:"description,omitempty" db:"description,omitempty"`
+	Phone   string `json:"phone,omitempty" db:"phone,omitempty"`
 
-	Media string `json:"media,omitempty" db:"media"` // nullable
+
+
+	BloodGroup  string `json:"blood_group,omitempty" db:"blood_group,omitempty"`
+	Gender  string `json:"gender,omitempty" db:"gender,omitempty"`
+	Age     string `json:"age,omitempty" db:"age,omitempty"`
+
+	Media string `json:"media,omitempty" db:"media,omitempty"` // nullable
 	Coordinates
 	Location string `json:"location,omitempty" db:"location"` // nullable
-	Radius   int    `json:"radius,omitempty" db:"radius"`     // nullable (meters)
+	Radius   int    `json:"radius,omitempty" db:"radius,omitempty"`     // nullable (meters)
 
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
-	EventAt   time.Time `json:"event_at,omitempty" db:"event_at"` // nullable
+	EventAt   time.Time `json:"event_at" db:"event_at"` // nullable
 
 }

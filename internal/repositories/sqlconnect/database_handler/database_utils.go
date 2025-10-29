@@ -1,8 +1,10 @@
 package databasehandler
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"hackathon/pkg/utils"
 	"math/rand"
 	"os"
 	"strings"
@@ -26,10 +28,10 @@ func sendOTP(to, otp string) error {
 	apiKey := strings.TrimSpace(os.Getenv("SENDGRID_API_KEY"))
 
 	if fromEmail == "" || apiKey == "" {
-		return errors.New("missing FROM_EMAIL or SENDGRID_API_KEY")
+		return utils.ErrorHandler(errors.New("missing FROM_EMAIL or SENDGRID_API_KEY"), "failed to send otp")
 	}
 	if to == "" || otp == "" {
-		return errors.New("missing recipient or otp")
+		return utils.ErrorHandler(errors.New("missing recipient or otp"),"failed to send otp")
 	}
 
 	from := mail.NewEmail(fromName, fromEmail)
@@ -66,7 +68,22 @@ func sendOTP(to, otp string) error {
 		return fmt.Errorf("sendgrid send failed: %w", err)
 	}
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body)
+		return utils.ErrorHandler(fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body),"failed to send otp")
 	}
 	return nil
+}
+
+func getNameAndPhone(db *sql.DB, uuid string) (string, string, error) {
+
+	var name string
+	var number string
+
+	err := db.QueryRow("SELECT name, phone FROM users WHERE uuid = $1", uuid).Scan(&name, &number)
+
+	if err != nil {
+		return "", "", utils.ErrorHandler(err, "error retrieveing name and number from database")
+	}
+
+	return name, number, nil
+
 }

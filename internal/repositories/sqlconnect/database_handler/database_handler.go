@@ -403,7 +403,7 @@ func HelpRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
 	radius := 500
 
-	rows, err := db.Query("SELECT  post_uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
 		"help", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
 	)
 	if err != nil {
@@ -412,10 +412,156 @@ func HelpRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	for rows.Next() {
 		var post models.Post
-		err := rows.Scan(&post.PostUUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude)
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
+}
+
+// Event -------------------------------------------------------------------------------------------------------------------------------------------------
+
+func EventRequestPostDB(uuid string, post models.Post) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	if post.Radius == 0 {
+		post.Radius = 500
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8);",
+		uuid, "event", post.Title, post.Description, post.Longitude, post.Latitude, post.EventAt, post.Radius,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error preparing statement")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if int(rowsAffected) == 0 {
+		return utils.ErrorHandler(err, "no rows effected")
+	}
+
+	return nil
+
+}
+
+func EventRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	time := time.Now().UTC()
+
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4;",
+		"event", coordinates.Longitude, coordinates.Latitude, time,
+	)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.PostUUID, post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt)
+
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
+}
+
+//Media-------------------------------------------------------------------------------------------------------------------------------------
+func MediaRequestPostDB(uuid string, post models.Post) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, media, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
+		uuid, "media", post.Title, post.Description, post.Longitude, post.Latitude,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error preparing statement")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if int(rowsAffected) == 0 {
+		return utils.ErrorHandler(err, "no rows effected")
+	}
+
+	return nil
+
+}
+
+func MediaRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	cutoff := time.Now().UTC().Add(-240 * time.Hour)
+	radius := 100 * 1000
+
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
+		"media", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, post.CreatedAt)
+
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
+
+		if err != nil {
+			return nil, err
 		}
 
 		posts = append(posts, post)
