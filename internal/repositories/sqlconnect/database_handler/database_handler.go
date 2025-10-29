@@ -190,8 +190,8 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2, phone = $3, gender = $4, address = $5, age = $6, authentication = $7 WHERE uuid = $8",
-		userInfo.Aadhar, userInfo.Name, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.Age, "verified", uuid,
+	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2, phone = $3, gender = $4, address = $5, date_of_birth = $6, authentication = $7 WHERE uuid = $8",
+		userInfo.Aadhar, userInfo.Name, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.DateOfBirth, "verified", uuid,
 	)
 
 	if err != nil {
@@ -362,6 +362,26 @@ func UpdateCoordinates(uuid string, coordinates models.Coordinates) error {
 	return nil
 }
 
+func ProfileInfoDB(uuid string) (models.User, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var user models.User
+
+	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, authentication FROM users WHERE uuid = $1", uuid).
+		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.Authentication)
+
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
+	}
+
+	return user, nil
+}
+
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 func HelpRequestPostDB(uuid string, post models.Post) error {
@@ -503,7 +523,7 @@ func EventRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	return posts, nil
 }
 
-//Media-------------------------------------------------------------------------------------------------------------------------------------
+// Media-------------------------------------------------------------------------------------------------------------------------------------
 func MediaRequestPostDB(uuid string, post models.Post) error {
 
 	db, err := sqlconnect.ConnectDB()
@@ -512,8 +532,8 @@ func MediaRequestPostDB(uuid string, post models.Post) error {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, media, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
-		uuid, "media", post.Title, post.Description, post.Longitude, post.Latitude,
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, media, coordinates) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography);",
+		uuid, "media", post.Title, post.Description, post.Media, post.Longitude, post.Latitude,
 	)
 
 	if err != nil {
@@ -553,6 +573,143 @@ func MediaRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	for rows.Next() {
 		var post models.Post
 		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, post.CreatedAt)
+
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
+}
+
+// midding -----------------------------------------------------------------------------------------------------------------------------------------
+func MissingRequestPostDB(uuid string, post models.Post) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, gender, age, coordinates) VALUES($1, $2, $3, $4, $5, $6 ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography);",
+		uuid, "missing", post.Title, post.Description, post.Gender, post.Age, post.Longitude, post.Latitude,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error preparing statement")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if int(rowsAffected) == 0 {
+		return utils.ErrorHandler(err, "no rows effected")
+	}
+
+	return nil
+
+}
+
+func MissingRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	cutoff := time.Now().UTC().Add(-30 * time.Minute)
+	radius := 500
+
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
+		"missing", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Gender, &post.Age, &post.Longitude, &post.Latitude)
+
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
+
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
+}
+
+//blood --------------------------------------------------------------------------------------------------------------------------------------
+
+func BloodRequestPostDB(uuid string, post models.Post) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, blood_group, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
+		uuid, "blood", post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error preparing statement")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if int(rowsAffected) == 0 {
+		return utils.ErrorHandler(err, "no rows effected")
+	}
+
+	return nil
+
+}
+
+func BloodRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	cutoff := time.Now().UTC().Add(-30 * time.Minute)
+	radius := 500
+
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
+		"help", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")

@@ -21,7 +21,7 @@ type UserInfo struct {
 	Phone   string `json:"phone,omitempty" db:"phone,omitempty"`
 	Gender  string `json:"gender,omitempty" db:"gender,omitempty"`
 	Address string `json:"address,omitempty" db:"address,omitempty"`
-	Age     string `json:"age,omitempty" db:"age,omitempty"`
+	DateOfBirth string `json:"date_of_birth,omitempty" db:"date_of_birth,omitempty"`
 }
 
 type ResetPassword struct {

@@ -22,7 +22,7 @@ func checkEmptyField(modle any) error {
 }
 func main() {
 
-	userInfo := models.UserInfo{Aadhar: "w", Phone: "32", Gender: "", Address: "yes", Age: "maybe"}
+	userInfo := models.UserInfo{Aadhar: "w", Phone: "32", Gender: "", Address: "yes"}
 
 	err := checkEmptyField(userInfo)
 

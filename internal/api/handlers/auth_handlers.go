@@ -81,8 +81,6 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	
-
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "Bearer",
@@ -176,7 +174,6 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-
 	// send token as response or a cookie
 	http.SetCookie(w, &http.Cookie{
 		Name:     "Bearer",
@@ -267,8 +264,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().AddDate(0, 6, 0),
 		SameSite: http.SameSiteStrictMode,
 	})
-	
-	
+
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
@@ -473,7 +469,7 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if  req.NewPassword == "" {
+	if req.NewPassword == "" {
 		myErr := utils.ErrorHandler(fmt.Errorf("new or confirm passwords are empty"), "empty json fields")
 		http.Error(w, myErr.Error(), http.StatusBadRequest)
 		return
@@ -552,6 +548,39 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}{
 		Status: "success",
+	}
+
+	err = json.NewEncoder(w).Encode(responce)
+
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "error encoding json")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func ViewProfile(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	user, err := databasehandler.ProfileInfoDB(uuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	responce := struct {
+		Status string      `json:"status"`
+		Data   models.User `json:"data"`
+	}{
+		Status: "success",
+		Data:   user,
 	}
 
 	err = json.NewEncoder(w).Encode(responce)
