@@ -25,5 +25,9 @@ func Router() *http.ServeMux {
 	// get location---------------------------------------------------------------------------------
 	mux.HandleFunc("POST /coordinates", handlers.UpdateCoordinatesHandlerFunc)
 
+	// app functions--------------------------------------------------------------------------------
+	mux.HandleFunc("POST /help", handlers.HelpRequestPost)
+	mux.HandleFunc("GET /help", handlers.HelpRequestGet)
+
 	return mux
 }

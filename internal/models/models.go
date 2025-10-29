@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 type User struct {
 	Uuid            string `json:"uuid,omitempty" db:"uuid,omitempty"`
 	Email           string `json:"email,omitempty" db:"email,omitempty"`
@@ -36,4 +40,25 @@ type NearbyUser struct {
 	Name     string  `json:"name,omitempty" db:"name,omitempty"`
 	Phone    string  `json:"phone,omitempty" db:"phone,omitempty"`
 	Distance float64 `json:"distance,omitempty" db:"distance,omitempty"`
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
+type Post struct {
+	PostUUID string `json:"post_uuid" db:"post_uuid"`
+	UUID     string `json:"uuid" db:"uuid"` // FK to users(uuid)
+
+	Type        string `json:"type" db:"type"`
+	Title       string `json:"title" db:"title"`
+	Description string `json:"description" db:"description"`
+	BloodGroup  string `json:"blood_group" db:"blood_group"`
+
+	Media string `json:"media,omitempty" db:"media"` // nullable
+	Coordinates
+	Location string `json:"location,omitempty" db:"location"` // nullable
+	Radius   int    `json:"radius,omitempty" db:"radius"`     // nullable (meters)
+
+	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	EventAt   time.Time `json:"event_at,omitempty" db:"event_at"` // nullable
+
 }

@@ -158,7 +158,6 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, error) {
 		uuid, user.Email, user.Password, role, "mail",
 	)
 
-
 	user.Password = ""
 
 	if err != nil {
@@ -361,4 +360,67 @@ func UpdateCoordinates(uuid string, coordinates models.Coordinates) error {
 	}
 
 	return nil
+}
+
+//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+func HelpRequestPostDB(uuid string, post models.Post) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
+		uuid, "help", post.Title, post.Description, post.Longitude, post.Latitude,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error preparing statement")
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+
+	if int(rowsAffected) == 0 {
+		return utils.ErrorHandler(err, "no rows effected")
+	}
+
+	return nil
+
+}
+
+func HelpRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	cutoff := time.Now().UTC().Add(-30 * time.Minute)
+	radius := 500
+
+	rows, err := db.Query("SELECT  post_uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
+		"help", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	)
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+
+	for rows.Next() {
+		var post models.Post
+		err := rows.Scan(&post.PostUUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude)
+
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
 }
