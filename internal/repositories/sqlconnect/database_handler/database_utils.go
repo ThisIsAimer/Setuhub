@@ -106,6 +106,10 @@ func getPostAppQuery(section string) string {
 func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 	args := make(map[string][]any, 0)
 
+	if post.Location == nil {
+		post.Location = []models.LocationObj{}
+	}
+
 	locJSON, err := json.Marshal(post.Location)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error parsing location")

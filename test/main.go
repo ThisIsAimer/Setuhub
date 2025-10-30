@@ -1,35 +1,26 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"hackathon/internal/models"
-	"reflect"
 )
 
-func checkEmptyField(modle any) error {
-	modleValue := reflect.ValueOf(modle)
-	modleType := modleValue.Type()
-
-	for i := range modleType.NumField() {
-
-		if modleValue.Field(i).String() == "" {
-			return fmt.Errorf("empty fields found")
-		}
-
-	}
-
-	return nil
-}
 func main() {
 
-	userInfo := models.UserInfo{Aadhar: "w", Phone: "32", Gender: "", Address: "yes"}
+	var post models.Post
 
-	err := checkEmptyField(userInfo)
-
+	fmt.Println("location", post.Location)
+	if post.Location == nil {
+		post.Location = []models.LocationObj{}
+	}
+	
+	locJSON, err := json.Marshal(post.Location)
 	if err != nil {
-		fmt.Println("error is:", err)
+		fmt.Println("err", err)
 		return
 	}
-	fmt.Println(" fields full")
+
+	fmt.Println("bytes", string(locJSON))
 
 }
