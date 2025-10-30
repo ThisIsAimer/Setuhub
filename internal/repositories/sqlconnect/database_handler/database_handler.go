@@ -524,11 +524,12 @@ func EventRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 		return nil, utils.ErrorHandler(err, "error making query")
 	}
 
+
 	for rows.Next() {
 		var post models.Post
 		var locJSON []byte
 
-		err := rows.Scan(&post.PostUUID, post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt, locJSON)
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt, locJSON)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
@@ -674,7 +675,7 @@ func MissingRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) 
 
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
 
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
+	rows, err := db.Query("SELECT post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
 		"missing", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
@@ -760,7 +761,7 @@ func BloodRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
 
 	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
-		"help", coordinates.Longitude, coordinates.Latitude, cutoff,
+		"blood", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
