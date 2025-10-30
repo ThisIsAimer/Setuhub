@@ -26,8 +26,17 @@ func checkEmptyField(modle any) error {
 func isValidEmailFormat(email string) error {
 	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
-	if !emailRegex.MatchString(email){
+	if !emailRegex.MatchString(email) {
 		return utils.ErrorHandler(fmt.Errorf("email format wrong"), "invalid email")
 	}
 	return nil
+}
+
+func checkSection(section string) error {
+	switch section {
+	case "help", "event", "media", "missing", "blood":
+		return nil
+	default:
+		return utils.ErrorHandler(fmt.Errorf("invalid section: %s", section), "invalid route")
+	}
 }

@@ -91,24 +91,22 @@ func getNameAndPhone(db *sql.DB, uuid string) (string, string, error) {
 
 }
 
-func getPostAppQuary(section string) string {
-
+func getPostAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
 	query["help"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb);"
 	query["event"] = "INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8, $9::jsonb);"
 	query["media"] = "INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8);"
-	query["missing"] = "INSERT INTO posts(uuid, type, title, description, gender, age, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $8, $9::jsonb);"
-	query["blood"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb);"
+	query["missing"] = "INSERT INTO posts(uuid, type, title, description, gender, age, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $9, $10::jsonb);"
+	query["blood"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb);"
 
 	return query[section]
 }
 
 func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
-
 	args := make(map[string][]any, 0)
-	locJSON, err := json.Marshal(post.Location)
 
+	locJSON, err := json.Marshal(post.Location)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error parsing location")
 	}
@@ -122,33 +120,31 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 	return args[section], nil
 }
 
-func postPostAppQuary(section string) string {
-
+func getGetAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
 	query["help"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
 	query["event"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4;"
-	query["media"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $5;"
+	query["media"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
 	query["missing"] = "SELECT post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
 	query["blood"] = "SELECT post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
 
 	return query[section]
 }
 
-func postPostAppArgs(section string, coordinates models.Coordinates) []any {
-
+func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 	args := make(map[string][]any, 0)
-	var cutoff time.Time
 
+	var cutoff time.Time
 	if section == "media" {
 		cutoff = time.Now().UTC().Add(-240 * time.Hour)
 	} else {
 		cutoff = time.Now().UTC().Add(-30 * time.Minute)
 	}
-	time := time.Now().UTC()
+	now := time.Now().UTC() // renamed from `time`
 
 	args["help"] = []any{"help", coordinates.Longitude, coordinates.Latitude, cutoff}
-	args["event"] = []any{"event", coordinates.Longitude, coordinates.Latitude, time}
+	args["event"] = []any{"event", coordinates.Longitude, coordinates.Latitude, now}
 	args["media"] = []any{"media", coordinates.Longitude, coordinates.Latitude, cutoff}
 	args["missing"] = []any{"missing", coordinates.Longitude, coordinates.Latitude, cutoff}
 	args["blood"] = []any{"blood", coordinates.Longitude, coordinates.Latitude, cutoff}
@@ -156,12 +152,11 @@ func postPostAppArgs(section string, coordinates models.Coordinates) []any {
 	return args[section]
 }
 
-func postPostAppScan(section string, post *models.Post, locJSON *[]byte) []any {
-
+func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	args := make(map[string][]any, 0)
 
 	args["help"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, locJSON}
-	args["event"] = []any{&post.PostUUID, post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt, locJSON}
+	args["event"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt, locJSON}
 	args["media"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt}
 	args["missing"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, locJSON}
 	args["blood"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, locJSON}

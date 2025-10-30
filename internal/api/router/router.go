@@ -28,16 +28,8 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /coordinates", handlers.UpdateCoordinatesHandlerFunc)
 
 	// app functions--------------------------------------------------------------------------------
-	mux.HandleFunc("POST /help", handlers.HelpRequestPost)
-	mux.HandleFunc("GET /help", handlers.HelpRequestGet)
-	mux.HandleFunc("POST /event", handlers.EventRequestPost)
-	mux.HandleFunc("GET /event", handlers.EventRequestGet)
-	mux.HandleFunc("POST /post", handlers.MediaRequestPost)
-	mux.HandleFunc("GET /post", handlers.MediaRequestGet)
-	mux.HandleFunc("POST /missing", handlers.MissingRequestPost)
-	mux.HandleFunc("GET /missing", handlers.MissingRequestGet)
-	mux.HandleFunc("POST /blood", handlers.BloodRequestPost)
-	mux.HandleFunc("GET /blood", handlers.BloodRequestGet)
+	mux.HandleFunc("GET /create/{section}", handlers.HandleRequestCreate)
+	mux.HandleFunc("GET /retrieve/{section}", handlers.HandleRequestRetrieve)
 
 	return mux
 }
