@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"hackathon/internal/models"
 	nosql "hackathon/internal/repositories/no_sql"
@@ -392,8 +393,18 @@ func HelpRequestPostDB(uuid string, post models.Post) error {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
-		uuid, "help", post.Title, post.Description, post.Longitude, post.Latitude,
+	if post.Radius == 0 {
+		post.Radius = 500
+	}
+
+	locJSON, err := json.Marshal(post.Location)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error parsing location")
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb);",
+		uuid, "help", post.Title, post.Description, post.Longitude, post.Latitude, post.Radius, locJSON,
 	)
 
 	if err != nil {
@@ -421,10 +432,8 @@ func HelpRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	posts := make([]models.Post, 0)
 
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
-	radius := 500
-
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
-		"help", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
+		"help", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
@@ -432,10 +441,17 @@ func HelpRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	for rows.Next() {
 		var post models.Post
-		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude)
+		var locJSON []byte
+
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, locJSON)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		err = json.Unmarshal(locJSON, &post.Location)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error unmarshaling location")
 		}
 
 		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
@@ -465,8 +481,14 @@ func EventRequestPostDB(uuid string, post models.Post) error {
 		post.Radius = 500
 	}
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8);",
-		uuid, "event", post.Title, post.Description, post.Longitude, post.Latitude, post.EventAt, post.Radius,
+	locJSON, err := json.Marshal(post.Location)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error parsing location")
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8, $9::jsonb);",
+		uuid, "event", post.Title, post.Description, post.Longitude, post.Latitude, post.EventAt, post.Radius, locJSON,
 	)
 
 	if err != nil {
@@ -495,7 +517,7 @@ func EventRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	time := time.Now().UTC()
 
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4;",
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4;",
 		"event", coordinates.Longitude, coordinates.Latitude, time,
 	)
 	if err != nil {
@@ -504,10 +526,17 @@ func EventRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	for rows.Next() {
 		var post models.Post
-		err := rows.Scan(&post.PostUUID, post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt)
+		var locJSON []byte
+
+		err := rows.Scan(&post.PostUUID, post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.EventAt, locJSON)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		err = json.Unmarshal(locJSON, &post.Location)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error unmarshaling location")
 		}
 
 		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
@@ -532,8 +561,13 @@ func MediaRequestPostDB(uuid string, post models.Post) error {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, media, coordinates) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography);",
-		uuid, "media", post.Title, post.Description, post.Media, post.Longitude, post.Latitude,
+	if post.Radius == 0 {
+
+		post.Radius = 100 * 1000
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8);",
+		uuid, "media", post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.Radius,
 	)
 
 	if err != nil {
@@ -561,10 +595,9 @@ func MediaRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	posts := make([]models.Post, 0)
 
 	cutoff := time.Now().UTC().Add(-240 * time.Hour)
-	radius := 100 * 1000
 
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
-		"media", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $5;",
+		"media", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
@@ -572,6 +605,7 @@ func MediaRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	for rows.Next() {
 		var post models.Post
+
 		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, post.CreatedAt)
 
 		if err != nil {
@@ -600,8 +634,18 @@ func MissingRequestPostDB(uuid string, post models.Post) error {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, gender, age, coordinates) VALUES($1, $2, $3, $4, $5, $6 ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography);",
-		uuid, "missing", post.Title, post.Description, post.Gender, post.Age, post.Longitude, post.Latitude,
+	if post.Radius == 0 {
+		post.Radius = 500
+	}
+
+	locJSON, err := json.Marshal(post.Location)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error parsing location")
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, gender, age, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $8, $9::jsonb);",
+		uuid, "missing", post.Title, post.Description, post.Gender, post.Age, post.Longitude, post.Latitude, post.Radius, locJSON,
 	)
 
 	if err != nil {
@@ -629,10 +673,9 @@ func MissingRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) 
 	posts := make([]models.Post, 0)
 
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
-	radius := 500
 
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
-		"missing", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
+		"missing", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
@@ -640,10 +683,17 @@ func MissingRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) 
 
 	for rows.Next() {
 		var post models.Post
-		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Gender, &post.Age, &post.Longitude, &post.Latitude)
+		var locJSON []byte
+
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, locJSON)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		err = json.Unmarshal(locJSON, &post.Location)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error unmarshaling location")
 		}
 
 		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
@@ -669,8 +719,18 @@ func BloodRequestPostDB(uuid string, post models.Post) error {
 	}
 	defer db.Close()
 
-	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, blood_group, coordinates) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography);",
-		uuid, "blood", post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude,
+	if post.Radius == 0 {
+		post.Radius = 500
+	}
+
+	locJSON, err := json.Marshal(post.Location)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error parsing location")
+	}
+
+	result, err := db.Exec("INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb);",
+		uuid, "blood", post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude, post.Radius, locJSON,
 	)
 
 	if err != nil {
@@ -698,10 +758,9 @@ func BloodRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 	posts := make([]models.Post, 0)
 
 	cutoff := time.Now().UTC().Add(-30 * time.Minute)
-	radius := 500
 
-	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, $4) AND created_at >= $5;",
-		"help", coordinates.Longitude, coordinates.Latitude, radius, cutoff,
+	rows, err := db.Query("SELECT  post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;",
+		"help", coordinates.Longitude, coordinates.Latitude, cutoff,
 	)
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
@@ -709,10 +768,17 @@ func BloodRequestGetDB(coordinates models.Coordinates) ([]models.Post, error) {
 
 	for rows.Next() {
 		var post models.Post
-		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude)
+		var locJSON []byte
+
+		err := rows.Scan(&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, locJSON)
 
 		if err != nil {
 			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		err = json.Unmarshal(locJSON, &post.Location)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, "error unmarshaling location")
 		}
 
 		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
