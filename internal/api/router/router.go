@@ -28,7 +28,7 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /coordinates", handlers.UpdateCoordinatesHandlerFunc)
 
 	// app functions--------------------------------------------------------------------------------
-	mux.HandleFunc("GET /create/{section}", handlers.HandleRequestCreate)
+	mux.HandleFunc("POST /create/{section}", handlers.HandleRequestCreate)
 	mux.HandleFunc("GET /retrieve/{section}", handlers.HandleRequestRetrieve)
 
 	return mux
