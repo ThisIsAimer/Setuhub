@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"hackathon/internal/models"
 	databasehandler "hackathon/internal/repositories/sqlconnect/database_handler"
 	"hackathon/pkg/utils"
@@ -26,7 +27,6 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	
 
 	var newPost models.Post
 
@@ -36,7 +36,12 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.CreateRequestPostDB(uuid, section, newPost)
+	if newPost.Longitude == 0 && newPost.Latitude == 0 {
+		http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
+		return
+	}
+
+	newPost, err = databasehandler.CreateRequestPostDB(uuid, section, newPost)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -46,9 +51,11 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status string      `json:"status"`
+		Data   models.Post `json:"data"`
 	}{
 		Status: "Success",
+		Data:   newPost,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -104,6 +111,37 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	}{
 		Status: status,
 		Data:   posts,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
+	postId := r.PathValue("postid")
+
+	if postId == "" {
+		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "no postid given")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err := databasehandler.DonePatchRequestDB(postId)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response := struct {
+		Status string `json:"status"`
+	}{
+		Status: "success",
 	}
 
 	err = json.NewEncoder(w).Encode(response)

@@ -3,24 +3,22 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"hackathon/internal/models"
+	"time"
 )
 
 func main() {
 
-	var post models.Post
-
-	fmt.Println("location", post.Location)
-	if post.Location == nil {
-		post.Location = []models.LocationObj{}
-	}
-	
-	locJSON, err := json.Marshal(post.Location)
-	if err != nil {
-		fmt.Println("err", err)
-		return
+	type Post struct {
+		Title     string    `json:"title"`
+		CreatedAt time.Time `json:"created_at"`
 	}
 
-	fmt.Println("bytes", string(locJSON))
+	p := Post{
+		Title:     "Test",
+		CreatedAt: time.Now(),
+	}
+
+	b, _ := json.Marshal(p)
+	fmt.Println(string(b))
 
 }

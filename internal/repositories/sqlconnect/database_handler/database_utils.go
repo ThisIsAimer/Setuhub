@@ -94,11 +94,11 @@ func getNameAndPhone(db *sql.DB, uuid string) (string, string, error) {
 func getPostAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["help"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb);"
-	query["event"] = "INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8, $9::jsonb);"
-	query["media"] = "INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8);"
-	query["missing"] = "INSERT INTO posts(uuid, type, title, description, gender, age, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $9, $10::jsonb);"
-	query["blood"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb);"
+	query["help"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb) RETURNING post_uuid, created_at;"
+	query["event"] = "INSERT INTO posts(uuid, type, title, description, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8, $9::jsonb) RETURNING post_uuid, created_at, event_at;"
+	query["media"] = "INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8) RETURNING post_uuid, created_at;"
+	query["missing"] = "INSERT INTO posts(uuid, type, title, description, gender, age, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, ST_SetSRID(ST_MakePoint($7, $8), 4326)::geography, $9, $10::jsonb) RETURNING post_uuid, created_at;"
+	query["blood"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb) RETURNING post_uuid, created_at;"
 
 	return query[section]
 }
@@ -127,11 +127,11 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 func getGetAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["help"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
-	query["event"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4;"
-	query["media"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
-	query["missing"] = "SELECT post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
-	query["blood"] = "SELECT post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4;"
+	query["help"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["event"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4 AND done = false;"
+	query["media"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["missing"] = "SELECT post_uuid, uuid, title, description, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["blood"] = "SELECT post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
 
 	return query[section]
 }

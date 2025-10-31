@@ -385,11 +385,11 @@ func ProfileInfoDB(uuid string) (models.User, error) {
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-func CreateRequestPostDB(uuid, section string, post models.Post) error {
+func CreateRequestPostDB(uuid, section string, post models.Post) (models.Post, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database")
+		return models.Post{}, utils.ErrorHandler(err, "error connecting to database")
 	}
 	defer db.Close()
 
@@ -402,24 +402,31 @@ func CreateRequestPostDB(uuid, section string, post models.Post) error {
 	args, err := getPostAppArgs(uuid, section, post)
 
 	if err != nil {
-		return err
+		return models.Post{}, err
 	}
 
-	result, err := db.Exec(query,
-		args...,
-	)
+	if section == "event" {
 
-	if err != nil {
-		return utils.ErrorHandler(err, "error preparing statement")
+		err = db.QueryRow(query,
+			args...,
+		).Scan(&post.PostUUID, post.CreatedAt, post.EventAt)
+
+		if err != nil {
+			return models.Post{}, utils.ErrorHandler(err, "error inserting post")
+		}
+
+	} else {
+		err = db.QueryRow(query,
+			args...,
+		).Scan(&post.PostUUID, post.CreatedAt)
+
+		if err != nil {
+			return models.Post{}, utils.ErrorHandler(err, "error inserting post")
+		}
+
 	}
 
-	rowsAffected, _ := result.RowsAffected()
-
-	if int(rowsAffected) == 0 {
-		return utils.ErrorHandler(err, "no rows effected")
-	}
-
-	return nil
+	return post, nil
 
 }
 
@@ -473,4 +480,31 @@ func RetrieveRequestGetDB(section string, coordinates models.Coordinates) ([]mod
 	}
 
 	return posts, nil
+}
+
+func DonePatchRequestDB(postid string) error {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	query := `UPDATE posts SET done = $2 WHERE post_uuid = $1;`
+
+	res, err := db.Exec(query, postid, true)
+	if err != nil {
+		return utils.ErrorHandler(err, "error updating query")
+	}
+
+	// Check if any row was actually updated
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return utils.ErrorHandler(err, "error getting affected rows")
+	}
+
+	if rows == 0 {
+		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "no post found with postid")
+	}
+
+	return nil
 }
