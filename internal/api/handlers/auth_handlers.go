@@ -53,12 +53,6 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	if newUser.Password == "" {
-		http.Error(w, utils.ErrorHandler(fmt.Errorf("password empty"), "password cannot be empty").Error(), http.StatusBadRequest)
-		return
-	}
-
 	if len(newUser.Password) < 6 {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("password too short"), "password must be at least 6 characters").Error(), http.StatusBadRequest)
 		return
