@@ -30,9 +30,23 @@ func main() {
 
 	rateLimiter := mid.NewRateLimiter(5, time.Second*5)
 
+	whiteList := []string{
+		"latitude",
+		"longitude",
+	}
+
+	hppSettings := &mid.HppOptions{
+		CheckQuery:              true,
+		CheckBody:               true,
+		CheckBodyForContentType: "application/x-www-form-urlencoded",
+		WhiteList:               whiteList,
+	}
+
+	hppMiddleware := mid.Hpp(*hppSettings)
+
 	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/logout", "/login/forgotpassword")
 
-	secureRouter := utils.ApplyMiddlewares(router.Router(), mid.SecurityHeaders, jwtMiddleware, mid.XSSMiddleware, rateLimiter.Middleware, mid.Cors)
+	secureRouter := utils.ApplyMiddlewares(router.Router(), mid.SecurityHeaders, jwtMiddleware, hppMiddleware, mid.XSSMiddleware, rateLimiter.Middleware, mid.Cors)
 
 	server := &http.Server{
 		Addr:    ":" + port,

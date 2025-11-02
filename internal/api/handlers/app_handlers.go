@@ -7,6 +7,7 @@ import (
 	databasehandler "hackathon/internal/repositories/sqlconnect/database_handler"
 	"hackathon/pkg/utils"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -48,12 +49,10 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	newPost.Title = strings.TrimSpace(newPost.Title)
 	newPost.Description = strings.TrimSpace(newPost.Description)
 
-	if newPost.Description == ""{
+	if newPost.Description == "" {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("no description Provided"), "no description Provided").Error(), http.StatusBadRequest)
 		return
 	}
-
-	
 
 	noti := make(chan string)
 
@@ -95,14 +94,25 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
+	query := r.URL.Query()
+
+	latStr := query.Get("latitude")
+	lngStr := query.Get("longitude")
+
+	if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
+
+	}
 
 	var coordinates models.Coordinates
-
-	err = decoder.Decode(&coordinates)
+	coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
 	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		http.Error(w, utils.ErrorHandler(err, "invalid latitude parameter").Error(), http.StatusBadRequest)
+		return
+	}
+
+	coordinates.Longitude, err = strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "invalid longitude parameter").Error(), http.StatusBadRequest)
 		return
 	}
 
