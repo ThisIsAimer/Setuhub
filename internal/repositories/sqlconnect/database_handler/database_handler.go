@@ -373,8 +373,8 @@ func ProfileInfoDB(uuid string) (models.User, error) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, authentication FROM users WHERE uuid = $1", uuid).
-		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.Authentication)
+	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, authentication, profilePhotoUrl FROM users WHERE uuid = $1", uuid).
+		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.Authentication, &user.ProfilePhotoURL)
 
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database")
@@ -383,8 +383,26 @@ func ProfileInfoDB(uuid string) (models.User, error) {
 	return user, nil
 }
 
-//-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+// profilePhoto-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+func UpdateProfilePhotoDB(uuid, photoUrl string) error {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
 
+	_, err = db.Exec(`UPDATE users SET profile_photo_url = $1 WHERE uuid = $2;`,
+		photoUrl, uuid,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "error updating profile photo")
+	}
+
+	return nil
+}
+
+// app handlers-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 func CreateRequestPostDB(uuid, section string, post models.Post, noti chan string) (models.Post, error) {
 
 	db, err := sqlconnect.ConnectDB()

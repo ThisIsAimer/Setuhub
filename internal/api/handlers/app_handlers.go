@@ -7,6 +7,7 @@ import (
 	databasehandler "hackathon/internal/repositories/sqlconnect/database_handler"
 	"hackathon/pkg/utils"
 	"net/http"
+	"strings"
 )
 
 func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
@@ -43,6 +44,16 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
 		return
 	}
+
+	newPost.Title = strings.TrimSpace(newPost.Title)
+	newPost.Description = strings.TrimSpace(newPost.Description)
+
+	if newPost.Description == ""{
+		http.Error(w, utils.ErrorHandler(fmt.Errorf("no description Provided"), "no description Provided").Error(), http.StatusBadRequest)
+		return
+	}
+
+	
 
 	noti := make(chan string)
 
