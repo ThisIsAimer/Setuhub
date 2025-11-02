@@ -490,12 +490,6 @@ func RetrieveRequestGetDB(section string, coordinates models.Coordinates) ([]mod
 			return nil, utils.ErrorHandler(err, "error unmarshaling location")
 		}
 
-		post.Name, post.Phone, err = getNameAndPhone(db, post.UUID)
-
-		if err != nil {
-			return nil, err
-		}
-
 		posts = append(posts, post)
 
 	}

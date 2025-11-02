@@ -1,7 +1,6 @@
 package databasehandler
 
 import (
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -74,21 +73,6 @@ func sendOTP(to, otp string) error {
 		return utils.ErrorHandler(fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body), "failed to send otp")
 	}
 	return nil
-}
-
-func getNameAndPhone(db *sql.DB, uuid string) (string, string, error) {
-
-	var name string
-	var number string
-
-	err := db.QueryRow("SELECT name, phone FROM users WHERE uuid = $1", uuid).Scan(&name, &number)
-
-	if err != nil {
-		return "", "", utils.ErrorHandler(err, "error retrieveing name and number from database")
-	}
-
-	return name, number, nil
-
 }
 
 func getPostAppQuery(section string) string {
