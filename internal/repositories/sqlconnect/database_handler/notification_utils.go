@@ -2,10 +2,11 @@ package databasehandler
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"hackathon/internal/models"
+	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
+	"time"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/messaging"
@@ -24,20 +25,20 @@ func newFCM() (*messaging.Client, error) {
 }
 
 // --------------------------------------------------------------------------------------------------------------------------------------------------
-func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, request, title, description string) (string, error) {
+func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, post models.Post) (string, error) {
 	if len(tokens) == 0 {
-		return fmt.Sprint("people in area to be notified provided"), nil
+		return fmt.Sprintln("people in area to be notified provided"), nil
 	}
 
 	message := &messaging.MulticastMessage{
 		Tokens: tokens,
 		Notification: &messaging.Notification{
-			Title: fmt.Sprintf("New %s request: %s", request, title),
-			Body:  description,
+			Title: fmt.Sprintf("New %s request: %s", post.Type, post.Title),
+			Body:  post.Description,
 		},
 		Data: map[string]string{
-			"link": fmt.Sprintf("https://yourapp.com/%s", request),
-			"type": request,
+			"link": fmt.Sprintf("https://yourapp.com/%s", post.PostUUID),
+			"type": post.Type,
 		},
 	}
 
@@ -74,26 +75,34 @@ func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, 
 
 //--------------------------------------------------------------------------------------------------------------------------------------------------
 
-func sendNotifications(db *sql.DB, post models.Post, radius int, noti chan string) {
+func sendNotifications(post models.Post, noti chan string) {
 
-	query := `SELECT firebase_token FROM users WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3);`
-
-	rows, err := db.Query(query,
-		post.Longitude, post.Latitude, radius,
-	)
-
+	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "unable to notify")
 		noti <- myErr.Error()
 		return
 	}
+	defer db.Close()
+
+	query := `SELECT firebase_token FROM users WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3);`
+
+	rows, err := db.Query(query,
+		post.Longitude, post.Latitude, post.Radius,
+	)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "unable to notify")
+		noti <- myErr.Error()
+		return
+	}
+	defer rows.Close()
 
 	tokens := make([]string, 0)
 
 	for rows.Next() {
 		var token string
 
-		err := rows.Scan(token)
+		err := rows.Scan(&token)
 
 		if err != nil {
 			myErr := utils.ErrorHandler(err, "unable to notify")
@@ -114,9 +123,10 @@ func sendNotifications(db *sql.DB, post models.Post, radius int, noti chan strin
 		return
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 
-	notified, err := sendToMany(ctx, fcmConn, tokens, post.Type, post.Title, post.Description)
+	notified, err := sendToMany(ctx, fcmConn, tokens, post)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "unable to notify")
 		noti <- myErr.Error()

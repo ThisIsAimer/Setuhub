@@ -385,7 +385,7 @@ func ProfileInfoDB(uuid string) (models.User, error) {
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-func CreateRequestPostDB(uuid, section string, post models.Post) (models.Post, error) {
+func CreateRequestPostDB(uuid, section string, post models.Post, noti chan string) (models.Post, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -409,7 +409,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post) (models.Post, e
 
 		err = db.QueryRow(query,
 			args...,
-		).Scan(&post.PostUUID, post.CreatedAt, post.EventAt)
+		).Scan(&post.PostUUID, &post.CreatedAt, &post.EventAt)
 
 		if err != nil {
 			return models.Post{}, utils.ErrorHandler(err, "error inserting post")
@@ -418,13 +418,15 @@ func CreateRequestPostDB(uuid, section string, post models.Post) (models.Post, e
 	} else {
 		err = db.QueryRow(query,
 			args...,
-		).Scan(&post.PostUUID, post.CreatedAt)
+		).Scan(&post.PostUUID, &post.CreatedAt)
 
 		if err != nil {
 			return models.Post{}, utils.ErrorHandler(err, "error inserting post")
 		}
 
 	}
+
+	go sendNotifications(post, noti)
 
 	return post, nil
 
@@ -451,6 +453,7 @@ func RetrieveRequestGetDB(section string, coordinates models.Coordinates) ([]mod
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error making query")
 	}
+	defer rows.Close()
 
 	for rows.Next() {
 		var post models.Post

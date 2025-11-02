@@ -12,6 +12,9 @@ type User struct {
 	PhoneNumber     string `json:"phoneNumber,omitempty" db:"phone_number,omitempty"`
 	Role            string `json:"role,omitempty" db:"role,omitempty"`
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
+
+	FirebaseToken string `json:"firebaseToken,omitempty" db:"firebase_token,omitempty"`
+	
 	UserInfo
 }
 

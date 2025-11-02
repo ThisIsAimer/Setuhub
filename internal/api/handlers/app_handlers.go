@@ -44,7 +44,9 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newPost, err = databasehandler.CreateRequestPostDB(uuid, section, newPost)
+	noti := make(chan string)
+
+	newPost, err = databasehandler.CreateRequestPostDB(uuid, section, newPost, noti)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -54,11 +56,13 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string      `json:"status"`
-		Data   models.Post `json:"data"`
+		Status             string      `json:"status"`
+		Data               models.Post `json:"data"`
+		NotificationStatus string      `json:"notificationStatus"`
 	}{
-		Status: "Success",
-		Data:   newPost,
+		Status:             "Success",
+		Data:               newPost,
+		NotificationStatus: <-noti,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -74,7 +78,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section := r.PathValue("section")
 
-	_ , err := checkSection(section)
+	_, err := checkSection(section)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
