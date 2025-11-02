@@ -19,7 +19,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	section := r.PathValue("section")
 
-	err := checkSection(section)
+	postType, err := checkSection(section)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -35,6 +36,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
 		return
 	}
+
+	newPost.Type = postType
 
 	if newPost.Longitude == 0 && newPost.Latitude == 0 {
 		http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
@@ -71,7 +74,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section := r.PathValue("section")
 
-	err := checkSection(section)
+	_ , err := checkSection(section)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

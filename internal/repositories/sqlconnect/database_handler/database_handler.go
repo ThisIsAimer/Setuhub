@@ -405,7 +405,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post) (models.Post, e
 		return models.Post{}, err
 	}
 
-	if section == "event" {
+	if section == "impactevents" {
 
 		err = db.QueryRow(query,
 			args...,

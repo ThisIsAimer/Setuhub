@@ -94,11 +94,11 @@ func getNameAndPhone(db *sql.DB, uuid string) (string, string, error) {
 func getPostAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["help"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb) RETURNING post_uuid, created_at;"
-	query["event"] = "INSERT INTO posts(uuid, type, title, description,  media, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9, $10::jsonb) RETURNING post_uuid, created_at, event_at;"
-	query["media"] = "INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8) RETURNING post_uuid, created_at;"
-	query["missing"] = "INSERT INTO posts(uuid, type, title, description, gender, age,  media, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($8, $9), 4326)::geography, $10, $11::jsonb) RETURNING post_uuid, created_at;"
-	query["blood"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb) RETURNING post_uuid, created_at;"
+	query["helpnearby"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb) RETURNING post_uuid, created_at;"
+	query["impactevents"] = "INSERT INTO posts(uuid, type, title, description,  media, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9, $10::jsonb) RETURNING post_uuid, created_at, event_at;"
+	query["moments"] = "INSERT INTO posts(uuid, type, title, description, media, coordinates, radius) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8) RETURNING post_uuid, created_at;"
+	query["missingpeople"] = "INSERT INTO posts(uuid, type, title, description, gender, age,  media, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($8, $9), 4326)::geography, $10, $11::jsonb) RETURNING post_uuid, created_at;"
+	query["bloodemergency"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb) RETURNING post_uuid, created_at;"
 
 	return query[section]
 }
@@ -115,11 +115,11 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 		return nil, utils.ErrorHandler(err, "error parsing location")
 	}
 
-	args["help"] = []any{uuid, "help", post.Title, post.Description, post.Longitude, post.Latitude, post.Radius, locJSON}
-	args["event"] = []any{uuid, "event", post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.EventAt, post.Radius, locJSON}
-	args["media"] = []any{uuid, "media", post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.Radius}
-	args["missing"] = []any{uuid, "missing", post.Title, post.Description, post.Gender, post.Age, post.Media, post.Longitude, post.Latitude, post.Radius, locJSON}
-	args["blood"] = []any{uuid, "blood", post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude, post.Radius, locJSON}
+	args["helpnearby"] = []any{uuid, section, post.Title, post.Description, post.Longitude, post.Latitude, post.Radius, locJSON}
+	args["impactevents"] = []any{uuid, section, post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.EventAt, post.Radius, locJSON}
+	args["moments"] = []any{uuid, section, post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.Radius}
+	args["missingpeople"] = []any{uuid, section, post.Title, post.Description, post.Gender, post.Age, post.Media, post.Longitude, post.Latitude, post.Radius, locJSON}
+	args["bloodemergency"] = []any{uuid, section, post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude, post.Radius, locJSON}
 
 	return args[section], nil
 }
@@ -127,11 +127,11 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 func getGetAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["help"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
-	query["event"] = "SELECT post_uuid, uuid, title, description, media, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4 AND done = false;"
-	query["media"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
-	query["missing"] = "SELECT post_uuid, uuid, title, description, media, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
-	query["blood"] = "SELECT post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["helpnearby"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["impactevents"] = "SELECT post_uuid, uuid, title, description, media, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, event_at, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND event_at >= $4 AND done = false;"
+	query["moments"] = "SELECT post_uuid, uuid, title, description, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, media, created_at FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["missingpeople"] = "SELECT post_uuid, uuid, title, description, media, gender, age, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
+	query["bloodemergency"] = "SELECT post_uuid, uuid, title, description, blood_group, ST_X(coordinates::geometry) AS longitude, ST_Y(coordinates::geometry) AS latitude, location FROM posts WHERE type = $1 AND ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, radius) AND created_at >= $4 AND done = false;"
 
 	return query[section]
 }
@@ -140,18 +140,18 @@ func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 	args := make(map[string][]any, 0)
 
 	var cutoff time.Time
-	if section == "media" {
+	if section == "moments" {
 		cutoff = time.Now().UTC().Add(-240 * time.Hour)
 	} else {
 		cutoff = time.Now().UTC().Add(-30 * time.Minute)
 	}
 	now := time.Now().UTC() // renamed from `time`
 
-	args["help"] = []any{"help", coordinates.Longitude, coordinates.Latitude, cutoff}
-	args["event"] = []any{"event", coordinates.Longitude, coordinates.Latitude, now}
-	args["media"] = []any{"media", coordinates.Longitude, coordinates.Latitude, cutoff}
-	args["missing"] = []any{"missing", coordinates.Longitude, coordinates.Latitude, cutoff}
-	args["blood"] = []any{"blood", coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["helpnearby"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["impactevents"] = []any{section, coordinates.Longitude, coordinates.Latitude, now}
+	args["moments"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["missingpeople"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["bloodemergency"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
 
 	return args[section]
 }
@@ -159,11 +159,11 @@ func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	args := make(map[string][]any, 0)
 
-	args["help"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, locJSON}
-	args["event"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.EventAt, locJSON}
-	args["media"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt}
-	args["missing"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, locJSON}
-	args["blood"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, locJSON}
+	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, locJSON}
+	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.EventAt, locJSON}
+	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt}
+	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, locJSON}
+	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, locJSON}
 
 	return args[section]
 }
