@@ -69,6 +69,8 @@ type Post struct {
 
 	CreatedAt time.Time `json:"createdAt" db:"created_at"`
 	EventAt   time.Time `json:"eventAt" db:"event_at"` // nullable
+
+	ProfilePhotoURL string  `json:"profilePhotoUrl" db:"profile_photo_url"`
 }
 
 type LocationObj struct {
