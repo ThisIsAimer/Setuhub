@@ -412,7 +412,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 	defer db.Close()
 
 	if post.Radius == 0 {
-		post.Radius = 500
+		post.Radius = 3000
 	}
 
 	query := getPostAppQuery(section)
