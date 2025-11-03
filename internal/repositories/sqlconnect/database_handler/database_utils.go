@@ -111,16 +111,16 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 func getGetAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["helpnearby"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
-	query["impactevents"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.event_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.event_at >= $4 AND p.done = false;"
-	query["moments"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.media, p.created_at, u.profile_photo_url, u.name FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 ORDER BY p.created_at DESC LIMIT $2;"
-	query["missingpeople"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.gender, p.age, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.done = false;"
-	query["bloodemergency"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
+	query["helpnearby"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, p.radius) AND p.created_at >= $5 AND p.done = false;"
+	query["impactevents"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.event_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, p.radius) AND p.event_at >= $5 AND p.done = false;"
+	query["moments"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.media, p.created_at, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, p.interested_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 ORDER BY p.created_at DESC LIMIT $3;"
+	query["missingpeople"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.gender, p.age, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, p.radius) AND p.done = false;"
+	query["bloodemergency"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($3, $4), 4326)::geography, p.radius) AND p.created_at >= $5 AND p.done = false;"
 
 	return query[section]
 }
 
-func getGetAppArgs(section string, coordinates models.Coordinates) []any {
+func getGetAppArgs(uuid, section string, coordinates models.Coordinates) []any {
 	args := make(map[string][]any, 0)
 
 	var cutoff time.Time
@@ -134,11 +134,11 @@ func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 	}
 	now := time.Now().UTC() // renamed from `time`
 
-	args["helpnearby"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
-	args["impactevents"] = []any{section, coordinates.Longitude, coordinates.Latitude, now}
-	args["moments"] = []any{section, 2}
-	args["missingpeople"] = []any{section, coordinates.Longitude, coordinates.Latitude}
-	args["bloodemergency"] = []any{section, coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["helpnearby"] = []any{section, uuid, coordinates.Longitude, coordinates.Latitude, cutoff}
+	args["impactevents"] = []any{section, uuid, coordinates.Longitude, coordinates.Latitude, now}
+	args["moments"] = []any{section, uuid, 20}
+	args["missingpeople"] = []any{section, uuid, coordinates.Longitude, coordinates.Latitude}
+	args["bloodemergency"] = []any{section, uuid, coordinates.Longitude, coordinates.Latitude, cutoff}
 
 	return args[section]
 }
@@ -146,11 +146,11 @@ func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	args := make(map[string][]any, 0)
 
-	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt, &post.ProfilePhotoURL, &post.Name}
-	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
+	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
+	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
+	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.InterestedCount}
+	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
+	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
 
 	return args[section]
 }

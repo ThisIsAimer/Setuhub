@@ -85,6 +85,12 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 }
 
 func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
 
 	section := r.PathValue("section")
 
@@ -118,7 +124,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	posts, err := databasehandler.RetrieveRequestGetDB(section, coordinates)
+	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, coordinates)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

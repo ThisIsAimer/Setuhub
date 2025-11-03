@@ -450,7 +450,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 }
 
-func RetrieveRequestGetDB(section string, coordinates models.Coordinates) ([]models.Post, error) {
+func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) ([]models.Post, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -462,7 +462,7 @@ func RetrieveRequestGetDB(section string, coordinates models.Coordinates) ([]mod
 
 	query := getGetAppQuery(section)
 
-	args := getGetAppArgs(section, coordinates)
+	args := getGetAppArgs(uuid, section, coordinates)
 
 	rows, err := db.Query(query,
 		args...,
