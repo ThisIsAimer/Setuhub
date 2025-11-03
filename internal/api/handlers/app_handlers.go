@@ -196,12 +196,12 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postUuid := r.PathValue("post_uuid")
+	postUuid := r.PathValue("postuuid")
 
 	postUuid = strings.TrimSpace(postUuid)
 
 	if postUuid == "" {
-		http.Error(w, "invalid post_uuid", http.StatusUnauthorized)
+		http.Error(w, "invalid postuuid", http.StatusUnauthorized)
 		return
 	}
 
@@ -240,9 +240,9 @@ func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	postUuid := strings.TrimSpace(r.PathValue("post_uuid"))
+	postUuid := strings.TrimSpace(r.PathValue("postuuid"))
 	if postUuid == "" {
-		http.Error(w, "invalid post_uuid", http.StatusBadRequest)
+		http.Error(w, "invalid postuuid", http.StatusBadRequest)
 		return
 	}
 
