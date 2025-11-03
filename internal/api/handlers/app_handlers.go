@@ -181,3 +181,84 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	postUuid := r.PathValue("post_uuid")
+
+	postUuid = strings.TrimSpace(postUuid)
+
+	if postUuid == "" {
+		http.Error(w, "invalid post_uuid", http.StatusUnauthorized)
+		return
+	}
+
+	result, err := databasehandler.InterestedPostHandler(uuid, postUuid)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response := struct {
+		Status          string `json:"status"`
+		Change          bool   `json:"change"`
+		InterestedCount int    `json:"interestedCount"`
+	}{
+		Status:          "success",
+		Change:          result.Changed,
+		InterestedCount: result.InterestedCount,
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	postUuid := strings.TrimSpace(r.PathValue("post_uuid"))
+	if postUuid == "" {
+		http.Error(w, "invalid post_uuid", http.StatusBadRequest)
+		return
+	}
+
+	result, err := databasehandler.UninterestedPost(uuid, postUuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status          string `json:"status"`
+		Change          bool   `json:"change"`
+		InterestedCount int    `json:"interestedCount"`
+	}{
+		Status:          "success",
+		Change:          result.Changed,
+		InterestedCount: result.InterestedCount,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+}

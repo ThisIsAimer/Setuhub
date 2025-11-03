@@ -6,6 +6,8 @@ import (
 	"hackathon/internal/models"
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
+	"log"
+	"strings"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
@@ -13,6 +15,7 @@ import (
 	"google.golang.org/api/option"
 )
 
+// firebase cloud messaging--------------------------------------------------------------------
 func newFCM() (*messaging.Client, error) {
 	ctx := context.Background()
 	// Either rely on GOOGLE_APPLICATION_CREDENTIALS or pass the file:
@@ -24,7 +27,35 @@ func newFCM() (*messaging.Client, error) {
 	return app.Messaging(ctx)
 }
 
-// --------------------------------------------------------------------------------------------------------------------------------------------------
+// sending tokens --------------------------------------------------------------------------------------------------------------------------------------------------
+
+func sendToOne(ctx context.Context, client *messaging.Client, token string) error {
+
+	if strings.TrimSpace(token) == "" {
+		return fmt.Errorf("empty FCM token")
+	}
+
+	message := &messaging.Message{
+		Token: token, // single device token string
+		Notification: &messaging.Notification{
+			Title: "someone has shown interest in your request!",
+			Body:  "A user on the way",
+		},
+		Data: map[string]string{
+			"link": "https://yourapp.com/",
+			"type": "information",
+		},
+	}
+
+	response, err := client.Send(ctx, message)
+	if err != nil {
+		return utils.ErrorHandler(err, fmt.Sprintf("Error sending message: %v", err))
+	}
+
+	log.Printf("Successfully sent message: %s", response)
+	return nil
+}
+
 func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, post models.Post) (string, error) {
 	if len(tokens) == 0 {
 		return fmt.Sprintln("people in area to be notified provided"), nil
@@ -73,8 +104,39 @@ func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, 
 	return fmt.Sprintf("successfully notified %d people", successCount), nil
 }
 
-//--------------------------------------------------------------------------------------------------------------------------------------------------
+// sending notis--------------------------------------------------------------------------------------------------------------------------------------------------
+func sendNotification(uuid string) {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		utils.ErrorHandler(err, "unable to notify")
+		return
+	}
+	defer db.Close()
 
+	var firebaseToken string
+
+	query := `SELECT firebase_token FROM users WHERE uuid = $1;`
+
+	err = db.QueryRow(query, uuid).Scan(&firebaseToken)
+	if err != nil {
+		utils.ErrorHandler(err, "unable to notify")
+		return
+	}
+
+	fcmConn, err := newFCM()
+	if err != nil {
+		utils.ErrorHandler(err, "unable to notify")
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = sendToOne(ctx, fcmConn, firebaseToken)
+	if err != nil {
+		return
+	}
+
+}
 func sendNotifications(post models.Post, noti chan string) {
 
 	db, err := sqlconnect.ConnectDB()
@@ -123,7 +185,7 @@ func sendNotifications(post models.Post, noti chan string) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	notified, err := sendToMany(ctx, fcmConn, tokens, post)

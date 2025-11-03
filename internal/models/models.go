@@ -73,6 +73,9 @@ type Post struct {
 	EventAt   time.Time `json:"eventAt,omitempty" db:"event_at,omitempty"` // nullable
 
 	ProfilePhotoURL string `json:"profilePhotoUrl" db:"profile_photo_url"`
+
+	InterestedCount int  `json:"interestedCount" db:"interested_count"`
+	Interested bool	`json:"interested" db:"interested"`
 }
 
 type LocationObj struct {
@@ -88,4 +91,10 @@ type LocationObj struct {
 	StreetNumber     string `json:"streetNumber,omitempty" db:"street_number,omitempty"`
 	Subregion        string `json:"subregion,omitempty" db:"subregion,omitempty"`
 	Timezone         string `json:"timezone,omitempty" db:"timezone,omitempty"`
+}
+
+type InterestResult struct {
+	Changed         bool   
+	InterestedCount int
+	Type            string
 }

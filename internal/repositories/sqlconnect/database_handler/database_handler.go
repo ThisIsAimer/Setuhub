@@ -523,3 +523,95 @@ func DonePatchRequestDB(postid string) error {
 
 	return nil
 }
+
+// interested-----------------------------------------------------------------------------------------------------------------------------
+func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, error) {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.InterestResult{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var result models.InterestResult
+
+	query := `
+	WITH ins AS (
+  		INSERT INTO interested (post_uuid, uuid)
+  		VALUES ($1::uuid, $2::text)
+  		ON CONFLICT DO NOTHING
+  		RETURNING 1
+	),
+	upd AS (
+  		UPDATE posts
+  		SET interested_count = interested_count + 1
+  		WHERE post_uuid = $1::uuid
+    		AND EXISTS (SELECT 1 FROM ins)
+  		RETURNING interested_count, type
+	)
+	SELECT
+  		EXISTS(SELECT 1 FROM ins) AS changed,
+  		COALESCE(u.interested_count, p.interested_count) AS interested_count,
+  		COALESCE(u.type, p.type) AS type
+		FROM posts p
+		LEFT JOIN upd u ON TRUE
+		WHERE p.post_uuid = $1::uuid;
+	`
+
+	err = db.QueryRow(query, postUuid, uuid).Scan(&result.Changed, &result.InterestedCount, &result.Type)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.InterestResult{}, utils.ErrorHandler(err, "post not found") // surface as 404 in handler
+		}
+		return models.InterestResult{}, utils.ErrorHandler(err, "error updating query")
+	}
+
+	if result.Changed && result.Type == "helpnearby" {
+		go sendNotification(uuid)
+	}
+
+	return result, nil
+}
+
+func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, error) {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.InterestResult{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var result models.InterestResult
+
+	const q = `
+	WITH del AS (
+	  DELETE FROM interested
+	  WHERE post_uuid = $1::uuid AND uuid = $2::text
+	  RETURNING 1
+	),
+	upd AS (
+	  UPDATE posts
+	  SET interested_count = GREATEST(interested_count - 1, 0)
+	  WHERE post_uuid = $1::uuid
+	    AND EXISTS (SELECT 1 FROM del)
+	  RETURNING interested_count, type
+	)
+	SELECT
+	  EXISTS(SELECT 1 FROM del) AS changed,
+	  COALESCE(u.interested_count, p.interested_count) AS interested_count,
+	  COALESCE(u.type, p.type) AS type
+	FROM posts p
+	LEFT JOIN upd u ON TRUE
+	WHERE p.post_uuid = $1::uuid;
+	`
+
+	// If the post doesn't exist, this returns sql.ErrNoRows (good -> 404 upstream)
+	err = db.QueryRow(q, postUuid, uuidStr).Scan(&result.Changed, &result.InterestedCount, &result.Type)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.InterestResult{}, utils.ErrorHandler(err, "post not found") // surface as 404 in handler
+		}
+		return models.InterestResult{}, utils.ErrorHandler(err, "error updating query")
+	}
+
+	return result, nil
+}
