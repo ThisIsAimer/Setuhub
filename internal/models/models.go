@@ -69,8 +69,8 @@ type Post struct {
 
 	Radius int `json:"radius,omitempty" db:"radius,omitempty"` // nullable (meters)
 
-	CreatedAt time.Time `json:"createdAt" db:"created_at"`
-	EventAt   time.Time `json:"eventAt" db:"event_at"` // nullable
+	CreatedAt time.Time `json:"createdAt,omitempty" db:"created_at,omitempty"`
+	EventAt   time.Time `json:"eventAt,omitempty" db:"event_at,omitempty"` // nullable
 
 	ProfilePhotoURL string `json:"profilePhotoUrl" db:"profile_photo_url"`
 }

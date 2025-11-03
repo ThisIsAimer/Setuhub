@@ -111,11 +111,11 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 func getGetAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
-	query["helpnearby"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
-	query["impactevents"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.event_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.event_at >= $4 AND p.done = false;"
+	query["helpnearby"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
+	query["impactevents"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.event_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.event_at >= $4 AND p.done = false;"
 	query["moments"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.media, p.created_at, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
-	query["missingpeople"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.gender, p.age, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
-	query["bloodemergency"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
+	query["missingpeople"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.gender, p.age, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
+	query["bloodemergency"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, u.name, u.phone FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND ST_DWithin(p.coordinates, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography, p.radius) AND p.created_at >= $4 AND p.done = false;"
 
 	return query[section]
 }
@@ -143,11 +143,11 @@ func getGetAppArgs(section string, coordinates models.Coordinates) []any {
 func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	args := make(map[string][]any, 0)
 
-	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
+	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
+	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
 	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.Media, &post.CreatedAt, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
-	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
+	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
+	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Name, &post.Phone}
 
 	return args[section]
 }

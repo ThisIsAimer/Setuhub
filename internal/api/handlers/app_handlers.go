@@ -100,7 +100,9 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	lngStr := query.Get("longitude")
 
 	if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
-
+		myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	var coordinates models.Coordinates
