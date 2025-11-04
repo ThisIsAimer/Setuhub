@@ -444,7 +444,9 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 	}
 
-	go sendNotifications(post, noti)
+	if section != "moments" {
+		go sendNotifications(post, noti)
+	}
 
 	return post, nil
 
@@ -487,7 +489,7 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 		err = json.Unmarshal(locJSON, &post.Location)
 		if err != nil {
-			return nil, utils.ErrorHandler(err, "error unmarshaling location")
+			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location"+ string(locJSON)))
 		}
 
 		posts = append(posts, post)

@@ -20,12 +20,17 @@ func Cors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 		w.Header().Set("Access-Control-Max-Age", "3600")
 
+		if r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		RealappSecret := os.Getenv("APP_SECRET")
 		appSecret := r.Header.Get("X-App-Secret")
 
 		if RealappSecret != appSecret {
-			http.Error(w, utils.ErrorHandler(fmt.Errorf(`wrong app Secret: "%s"`, appSecret),"not allowed by cors").Error(), http.StatusBadRequest)
-			return 
+			http.Error(w, utils.ErrorHandler(fmt.Errorf(`wrong app Secret: "%s"`, appSecret), "not allowed by cors").Error(), http.StatusBadRequest)
+			return
 		}
 
 		// method options is for a preflight check
