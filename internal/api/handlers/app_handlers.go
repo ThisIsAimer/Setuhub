@@ -21,6 +21,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	section := r.PathValue("section")
 
+	section = strings.TrimSpace(section)
+
 	postType, err := checkSection(section)
 
 	if err != nil {
@@ -41,9 +43,11 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	newPost.Type = postType
 
-	if newPost.Longitude == 0 && newPost.Latitude == 0 {
-		http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
-		return
+	if section != "moments" {
+		if newPost.Longitude == 0 && newPost.Latitude == 0 {
+			http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	newPost.Title = strings.TrimSpace(newPost.Title)
@@ -94,34 +98,39 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section := r.PathValue("section")
 
+	section = strings.TrimSpace(section)
+
 	_, err := checkSection(section)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	query := r.URL.Query()
-
-	latStr := query.Get("latitude")
-	lngStr := query.Get("longitude")
-
-	if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	var coordinates models.Coordinates
-	coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
-	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "invalid latitude parameter").Error(), http.StatusBadRequest)
-		return
-	}
+	
+	if section != "moments" {
+		query := r.URL.Query()
 
-	coordinates.Longitude, err = strconv.ParseFloat(lngStr, 64)
-	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "invalid longitude parameter").Error(), http.StatusBadRequest)
-		return
+		latStr := query.Get("latitude")
+		lngStr := query.Get("longitude")
+
+		if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
+			myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given")
+			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
+		if err != nil {
+			http.Error(w, utils.ErrorHandler(err, "invalid latitude parameter").Error(), http.StatusBadRequest)
+			return
+		}
+
+		coordinates.Longitude, err = strconv.ParseFloat(lngStr, 64)
+		if err != nil {
+			http.Error(w, utils.ErrorHandler(err, "invalid longitude parameter").Error(), http.StatusBadRequest)
+			return
+		}
 	}
 
 	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, coordinates)
