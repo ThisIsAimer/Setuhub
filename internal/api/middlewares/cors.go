@@ -24,7 +24,7 @@ func Cors(next http.Handler) http.Handler {
 		appSecret := r.Header.Get("X-App-Secret")
 
 		if RealappSecret != appSecret {
-			http.Error(w, utils.ErrorHandler(fmt.Errorf("wrong app Secret"),"not allowed by cors").Error(), http.StatusBadRequest)
+			http.Error(w, utils.ErrorHandler(fmt.Errorf(`wrong app Secret: "%s"`, appSecret),"not allowed by cors").Error(), http.StatusBadRequest)
 			return 
 		}
 
