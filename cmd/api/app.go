@@ -10,18 +10,18 @@ import (
 	"hackathon/internal/api/router"
 	"hackathon/pkg/utils"
 
-	_ "github.com/joho/godotenv"
+	"github.com/joho/godotenv"
 )
 
 func main() {
 
 	var err error
 
-	// err = godotenv.Load(`cmd\api\.env`)
-	// if err != nil {
-	// 	fmt.Println("Failed to load env")
-	// 	return
-	// }
+	err = godotenv.Load(`cmd\api\.env`)
+	if err != nil {
+		fmt.Println("Failed to load env")
+		return
+	}
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -44,7 +44,7 @@ func main() {
 
 	hppMiddleware := mid.Hpp(*hppSettings)
 
-	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/logout", "/login/forgotpassword", "/healthz")
+	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/logout", "/login/forgotpassword", "/healthz", "/health")
 
 	secureRouter := utils.ApplyMiddlewares(router.Router(), mid.SecurityHeaders, jwtMiddleware, hppMiddleware, mid.XSSMiddleware, rateLimiter.Middleware, mid.Cors)
 

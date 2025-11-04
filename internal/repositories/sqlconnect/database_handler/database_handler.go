@@ -489,7 +489,7 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 		err = json.Unmarshal(locJSON, &post.Location)
 		if err != nil {
-			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location"+ string(locJSON)))
+			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+ string(locJSON)))
 		}
 
 		posts = append(posts, post)
