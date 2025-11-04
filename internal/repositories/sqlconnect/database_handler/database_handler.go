@@ -536,25 +536,25 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, error)
 
 	query := `
 	WITH ins AS (
-  		INSERT INTO interested (post_uuid, uuid)
-  		VALUES ($1::uuid, $2::text)
-  		ON CONFLICT DO NOTHING
-  		RETURNING 1
+  	  INSERT INTO interested (post_uuid, uuid)
+  	  VALUES ($1::uuid, $2::text)
+  	  ON CONFLICT DO NOTHING
+  	  RETURNING 1
 	),
-	upd AS (
-  		UPDATE posts
-  		SET interested_count = interested_count + 1
-  		WHERE post_uuid = $1::uuid
-    		AND EXISTS (SELECT 1 FROM ins)
-  		RETURNING interested_count, type
+	  upd AS (
+  	  UPDATE posts
+  	  SET interested_count = interested_count + 1
+  	  WHERE post_uuid = $1::uuid
+    	AND EXISTS (SELECT 1 FROM ins)
+  	  RETURNING interested_count, type
 	)
 	SELECT
   		EXISTS(SELECT 1 FROM ins) AS changed,
   		COALESCE(u.interested_count, p.interested_count) AS interested_count,
-  		COALESCE(u.type, p.type) AS type
-		FROM posts p
-		LEFT JOIN upd u ON TRUE
-		WHERE p.post_uuid = $1::uuid;
+  		p.type
+	  FROM posts p
+	  LEFT JOIN upd u ON TRUE
+	  WHERE p.post_uuid = $1::uuid;
 	`
 
 	err = db.QueryRow(query, postUuid, uuid).Scan(&result.Changed, &result.InterestedCount, &result.Type)
@@ -598,7 +598,7 @@ func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, error) {
 	SELECT
 	  EXISTS(SELECT 1 FROM del) AS changed,
 	  COALESCE(u.interested_count, p.interested_count) AS interested_count,
-	  COALESCE(u.type, p.type) AS type
+	  p.type
 	FROM posts p
 	LEFT JOIN upd u ON TRUE
 	WHERE p.post_uuid = $1::uuid;
