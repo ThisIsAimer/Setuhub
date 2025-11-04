@@ -21,7 +21,7 @@ func Cors(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Max-Age", "3600")
 
 		fmt.Println("path:", r.URL.Path)
-		if r.URL.Path == "/health" || r.URL.Path == "/healthz" {
+		if r.URL.Path == "/" {
 			next.ServeHTTP(w, r)
 			return
 		}

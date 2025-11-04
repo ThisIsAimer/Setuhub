@@ -10,8 +10,6 @@ func Router() *http.ServeMux {
 
 	//test----------------------------------------------------------------------------------------
 	mux.HandleFunc("GET /home", handlers.Home)
-	mux.HandleFunc("/healthz", handlers.HandleHealth)
-	mux.HandleFunc("/health", handlers.HandleHealth)
 	// auth crud-----------------------------------------------------------------------------------
 	mux.HandleFunc("POST /signup", handlers.SignUpHandlerfunc)
 	mux.HandleFunc("POST /signup/otp", handlers.SignUpOtpfunc)
