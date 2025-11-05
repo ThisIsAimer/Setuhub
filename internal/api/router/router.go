@@ -39,6 +39,7 @@ func Router() *http.ServeMux {
 	// --- comments ---------------------------------------------------------------------
 	mux.HandleFunc("GET /request/comments/{postuuid}", handlers.GetCommentHandler)
 	mux.HandleFunc("POST /request/comment/create", handlers.CreateCommentHandler)
+	mux.HandleFunc("PATCH /request/comment/edit", handlers.EditCommentHandler)
 	mux.HandleFunc("DELETE /request/comment/delete/{commentuuid}", handlers.DeleteCommentHandler)
 
 	return mux

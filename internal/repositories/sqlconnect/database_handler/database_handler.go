@@ -775,6 +775,37 @@ func CreateCommentDBHandler(comment models.Comment) (models.Comment, error) {
 	return comment, nil
 }
 
+func EditCommentDBHandler(commentUuid, uuid, content string) (bool, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return false, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var edited bool
+
+	query := `
+	UPDATE comments
+	  SET content = $3::text,
+      edited = true
+	WHERE comment_uuid = $1::uuid
+  	  AND uuid = $2::text
+	RETURNING edited;
+	`
+
+	err = db.QueryRow(query, commentUuid, uuid, content).
+		Scan(&edited)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, utils.ErrorHandler(err, "comment not found or not owned")
+		}
+		return false, utils.ErrorHandler(err, "error updating query")
+	}
+
+	return edited, nil
+}
+
 func DeleteCommentDBHandler(commentUuid, uuid string) (bool, int, error) {
 
 	db, err := sqlconnect.ConnectDB()
@@ -808,7 +839,7 @@ func DeleteCommentDBHandler(commentUuid, uuid string) (bool, int, error) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, 0, utils.ErrorHandler(err, "post not found") // surface as 404 in handler
+			return false, 0, utils.ErrorHandler(err, "comment not found") // surface as 404 in handler
 		}
 		return false, 0, utils.ErrorHandler(err, "error updating query")
 	}

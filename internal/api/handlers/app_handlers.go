@@ -442,6 +442,63 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	commentUuid := r.PathValue("commentuuid")
+
+	commentUuid = strings.TrimSpace(commentUuid)
+
+	if commentUuid == "" {
+		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		return
+	}
+
+	var request = struct {
+		Content string `json:"content"`
+	}{}
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&request)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	request.Content = strings.TrimSpace(request.Content)
+	if request.Content == "" {
+		http.Error(w, "content empty", http.StatusBadRequest)
+		return
+	}
+
+	edited, err := databasehandler.EditCommentDBHandler(commentUuid, uuid, request.Content)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status string `json:"status"`
+		Edited bool   `json:"edited"`
+	}{
+		Status: "success",
+		Edited: edited,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
