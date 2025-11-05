@@ -416,6 +416,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 		post.Radius = 3000
 	}
 
+	
 	query := getPostAppQuery(section)
 
 	args, err := getPostAppArgs(uuid, section, post)
@@ -423,10 +424,11 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 	if err != nil {
 		return models.Post{}, err
 	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
 	if section == "impactevents" {
 
-		err = db.QueryRow(query,
+		err = db.QueryRowContext(ctx, query,
 			args...,
 		).Scan(&post.PostUUID, &post.CreatedAt, &post.EventAt)
 
@@ -435,7 +437,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 		}
 
 	} else {
-		err = db.QueryRow(query,
+		err = db.QueryRowContext(ctx, query,
 			args...,
 		).Scan(&post.PostUUID, &post.CreatedAt)
 
@@ -467,7 +469,9 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 	args := getGetAppArgs(uuid, section, coordinates)
 
-	rows, err := db.Query(query,
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, query,
 		args...,
 	)
 
@@ -516,7 +520,9 @@ func RetrieveMyRequestGetDB(uuid, section string) ([]models.Post, error) {
 
 	args := getGetMyArgs(uuid, section)
 
-	rows, err := db.Query(query,
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, query,
 		args...,
 	)
 

@@ -69,21 +69,40 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	response := struct {
-		Status             string      `json:"status"`
-		Data               models.Post `json:"data"`
-		NotificationStatus string      `json:"notificationStatus"`
-	}{
-		Status:             "Success",
-		Data:               newPost,
-		NotificationStatus: <-noti,
-	}
+	if section != "moments" {
+		response := struct {
+			Status             string      `json:"status"`
+			Data               models.Post `json:"data"`
+			NotificationStatus string      `json:"notificationStatus"`
+		}{
+			Status:             "Success",
+			Data:               newPost,
+			NotificationStatus: <-noti,
+		}
 
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
-		return
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			myErr := utils.ErrorHandler(err, "Failed to encode response")
+			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			return
+		}
+	} else {
+
+		response := struct {
+			Status             string      `json:"status"`
+			Data               models.Post `json:"data"`
+		}{
+			Status:             "Success",
+			Data:               newPost,
+		}
+
+		err = json.NewEncoder(w).Encode(response)
+		if err != nil {
+			myErr := utils.ErrorHandler(err, "Failed to encode response")
+			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	}
 
 }
@@ -107,7 +126,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var coordinates models.Coordinates
-	
+
 	if section != "moments" {
 		query := r.URL.Query()
 
@@ -167,7 +186,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 }
 
 // my Requests-------------------------------------------------------------------------------------------------------
-func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request){
+func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
