@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -79,9 +80,9 @@ func getPostAppQuery(section string) string {
 	query := make(map[string]string, 0)
 
 	query["helpnearby"] = "INSERT INTO posts(uuid, type, title, description, coordinates, radius, location) VALUES($1, $2, $3, $4, ST_SetSRID(ST_MakePoint($5, $6), 4326)::geography, $7, $8::jsonb) RETURNING post_uuid, created_at;"
-	query["impactevents"] = "INSERT INTO posts(uuid, type, title, description,  media, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9, $10::jsonb) RETURNING post_uuid, created_at, event_at;"
-	query["moments"] = "INSERT INTO posts(uuid, type, title, description, media) VALUES($1, $2, $3, $4, $5) RETURNING post_uuid, created_at;"
-	query["missingpeople"] = "INSERT INTO posts(uuid, type, title, description, gender, age,  media, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6, $7, ST_SetSRID(ST_MakePoint($8, $9), 4326)::geography, $10, $11::jsonb) RETURNING post_uuid, created_at;"
+	query["impactevents"] = "INSERT INTO posts(uuid, type, title, description,  media, coordinates, event_at, radius, location) VALUES($1, $2, $3, $4, $5::text[], ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9, $10::jsonb) RETURNING post_uuid, created_at, event_at;"
+	query["moments"] = "INSERT INTO posts(uuid, type, title, description, media) VALUES($1, $2, $3, $4, $5::text[]) RETURNING post_uuid, created_at;"
+	query["missingpeople"] = "INSERT INTO posts(uuid, type, title, description, gender, age,  media, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, $6,  $7::text[], ST_SetSRID(ST_MakePoint($8, $9), 4326)::geography, $10, $11::jsonb) RETURNING post_uuid, created_at;"
 	query["bloodemergency"] = "INSERT INTO posts(uuid, type, title, description, blood_group, coordinates, radius, location) VALUES($1, $2, $3, $4, $5, ST_SetSRID(ST_MakePoint($6, $7), 4326)::geography, $8, $9::jsonb) RETURNING post_uuid, created_at;"
 
 	return query[section]
@@ -100,9 +101,9 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 	}
 
 	args["helpnearby"] = []any{uuid, section, post.Title, post.Description, post.Longitude, post.Latitude, post.Radius, locJSON}
-	args["impactevents"] = []any{uuid, section, post.Title, post.Description, post.Media, post.Longitude, post.Latitude, post.EventAt, post.Radius, locJSON}
-	args["moments"] = []any{uuid, section, post.Title, post.Description, post.Media}
-	args["missingpeople"] = []any{uuid, section, post.Title, post.Description, post.Gender, post.Age, post.Media, post.Longitude, post.Latitude, post.Radius, locJSON}
+	args["impactevents"] = []any{uuid, section, post.Title, post.Description, pq.Array(post.Media), post.Longitude, post.Latitude, post.EventAt, post.Radius, locJSON}
+	args["moments"] = []any{uuid, section, post.Title, post.Description, pq.Array(post.Media)}
+	args["missingpeople"] = []any{uuid, section, post.Title, post.Description, post.Gender, post.Age, pq.Array(post.Media), post.Longitude, post.Latitude, post.Radius, locJSON}
 	args["bloodemergency"] = []any{uuid, section, post.Title, post.Description, post.BloodGroup, post.Longitude, post.Latitude, post.Radius, locJSON}
 
 	return args[section], nil
@@ -147,9 +148,9 @@ func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	args := make(map[string][]any, 0)
 
 	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
-	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
-	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.InterestedCount}
-	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Media, &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
+	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
+	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.InterestedCount}
+	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
 	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount}
 
 	return args[section]

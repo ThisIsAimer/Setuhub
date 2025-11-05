@@ -62,7 +62,7 @@ type Post struct {
 	Gender     string `json:"gender,omitempty" db:"gender,omitempty"`
 	Age        string `json:"age,omitempty" db:"age,omitempty"`
 
-	Media string `json:"media,omitempty" db:"media,omitempty"` // nullable
+	Media []string `json:"media,omitempty" db:"media,omitempty"` // nullable
 	Coordinates
 
 	Location []LocationObj `json:"location,omitempty" db:"location,omitempty"` // nullable
