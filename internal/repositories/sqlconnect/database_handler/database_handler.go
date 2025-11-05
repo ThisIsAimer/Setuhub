@@ -416,7 +416,6 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 		post.Radius = 3000
 	}
 
-	
 	query := getPostAppQuery(section)
 
 	args, err := getPostAppArgs(uuid, section, post)
@@ -502,6 +501,10 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 		posts = append(posts, post)
 
+		if err := rows.Err(); err != nil {
+			return nil, utils.ErrorHandler(err, "row iteration error")
+		}
+
 	}
 
 	return posts, nil
@@ -552,6 +555,10 @@ func RetrieveMyRequestGetDB(uuid, section string) ([]models.Post, error) {
 		}
 
 		posts = append(posts, post)
+
+		if err := rows.Err(); err != nil {
+			return nil, utils.ErrorHandler(err, "row iteration error")
+		}
 
 	}
 
@@ -676,4 +683,135 @@ func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, error) {
 	}
 
 	return result, nil
+}
+
+// comments------------------------------------------------------------------------------------------------------------------
+
+func GetCommentDBHandler(postUuid, uuid string) ([]models.Comment, error) {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	query := `
+ 	SELECT c.comment_uuid, c.uuid, c.content, c.edited, c.created_at, u.profile_photo_url
+	  FROM comments AS c
+	  JOIN users AS u ON c.uuid = u.uuid
+	  WHERE c.post_uuid = $1::uuid
+	  ORDER BY (uuid = $2::text) DESC, created_at DESC, comment_uuid DESC
+	LIMIT $3::int;
+  `
+	rows, err := db.Query(query, postUuid, uuid, 20)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+	defer rows.Close()
+
+	comments := make([]models.Comment, 0)
+
+	for rows.Next() {
+		var comment models.Comment
+
+		err := rows.Scan(&comment.CommentUUID, &comment.Uuid, &comment.Content, &comment.Edited, &comment.CreatedAt, &comment.ProfilePhotoURL)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		comments = append(comments, comment)
+
+		if err := rows.Err(); err != nil {
+			return nil, utils.ErrorHandler(err, "row iteration error")
+		}
+
+	}
+
+	return comments, nil
+}
+
+func CreateCommentDBHandler(comment models.Comment) (models.Comment, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return models.Comment{}, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	query := `
+	WITH ins AS (
+	  INSERT INTO comments (post_uuid, uuid, content)
+  	  VALUES ($1::uuid, $2::text, $3::text)
+  	  RETURNING comment_uuid, created_at
+	),
+	upd AS (
+  	  UPDATE posts
+  	  SET comment_count = comment_count + 1
+  	    WHERE post_uuid = $1::uuid
+	  RETURNING comment_count
+	)
+	SELECT
+  	  i.comment_uuid, i.created_at, u.comment_count
+	FROM ins i
+	JOIN upd u ON TRUE;
+	`
+	err = db.QueryRow(query, comment.PostUUID, comment.Uuid, comment.Content).
+		Scan(&comment.CommentUUID, &comment.CreatedAt, &comment.CommentCount)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return models.Comment{}, utils.ErrorHandler(err, "post not found") // surface as 404 in handler
+		}
+		return models.Comment{}, utils.ErrorHandler(err, "error updating query")
+	}
+
+	return comment, nil
+}
+
+func DeleteCommentDBHandler(commentUuid, uuid string) (bool, int, error) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return false, 0, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	var deleted bool
+	var commentCount int
+
+	query := `
+	WITH del AS (
+	  DELETE FROM comments
+	  WHERE comment_uuid = $1::uuid
+		AND uuid = $2::text
+	  RETURNING post_uuid
+	),
+	upd AS (
+	  UPDATE posts p
+	  SET comment_count = GREATEST(p.comment_count - 1, 0)
+	    WHERE p.post_uuid = (SELECT post_uuid FROM del)
+	  RETURNING p.post_uuid, p.comment_count, p.type
+	)
+	SELECT EXISTS(SELECT 1 FROM del) AS deleted,
+	COALESCE((SELECT comment_count FROM upd), 0)
+	FROM upd u;
+	`
+	err = db.QueryRow(query, commentUuid, uuid).
+		Scan(&deleted, &commentCount)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, 0, utils.ErrorHandler(err, "post not found") // surface as 404 in handler
+		}
+		return false, 0, utils.ErrorHandler(err, "error updating query")
+	}
+
+	return deleted, commentCount, nil
 }

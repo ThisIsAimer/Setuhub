@@ -75,7 +75,9 @@ type Post struct {
 	ProfilePhotoURL string `json:"profilePhotoUrl" db:"profile_photo_url"`
 
 	InterestedCount int  `json:"interestedCount" db:"interested_count"`
-	Interested bool	`json:"interested" db:"interested"`
+	Interested      bool `json:"interested" db:"interested"`
+
+	CommentCount int `json:"commentCount,omitempty" db:"comment_count"`
 }
 
 type LocationObj struct {
@@ -94,7 +96,18 @@ type LocationObj struct {
 }
 
 type InterestResult struct {
-	Changed         bool   
+	Changed         bool
 	InterestedCount int
 	Type            string
+}
+
+type Comment struct {
+	CommentUUID     string    `json:"commentUuid,omitempty" db:"comment_uuid"`
+	PostUUID        string    `json:"postUuid,omitempty" db:"post_uuid"`
+	Uuid            string    `json:"uuid,omitempty" db:"uuid"`
+	Content         string    `json:"content,omitempty" db:"content"`
+	CreatedAt       time.Time `json:"createdAt,omitempty" db:"created_at"`
+	Edited          bool      `json:"edited,omitempty" db:"edited"`
+	CommentCount    int       `json:"commentCount,omitempty" db:"comment_count"`
+	ProfilePhotoURL string    `json:"profilePhotoUrl" db:"profile_photo_url"`
 }

@@ -89,11 +89,11 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		response := struct {
-			Status             string      `json:"status"`
-			Data               models.Post `json:"data"`
+			Status string      `json:"status"`
+			Data   models.Post `json:"data"`
 		}{
-			Status:             "Success",
-			Data:               newPost,
+			Status: "Success",
+			Data:   newPost,
 		}
 
 		err = json.NewEncoder(w).Encode(response)
@@ -347,4 +347,142 @@ func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, myErr.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// comment handlers--------------------------------------------------------------------------------------------------------
+
+func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	postUuid := r.PathValue("postuuid")
+
+	postUuid = strings.TrimSpace(postUuid)
+
+	if postUuid == "" {
+		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		return
+	}
+
+	comments, err := databasehandler.GetCommentDBHandler(postUuid, uuid)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status   string           `json:"status"`
+		Comments []models.Comment `json:"comments"`
+	}{
+		Status:   "success",
+		Comments: comments,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	var comment models.Comment
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&comment)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		return
+	}
+
+	comment.Content = strings.TrimSpace(comment.Content)
+	if comment.Content == "" {
+		http.Error(w, "comment empty", http.StatusBadRequest)
+		return
+	}
+
+	comment.Uuid = uuid
+
+	comment, err = databasehandler.CreateCommentDBHandler(comment)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status  string         `json:"status"`
+		Comment models.Comment `json:"comment"`
+	}{
+		Status:  "success",
+		Comment: comment,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+}
+
+func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	commentUuid := r.PathValue("commentuuid")
+
+	commentUuid = strings.TrimSpace(commentUuid)
+
+	if commentUuid == "" {
+		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		return
+	}
+
+	deleted, count, err := databasehandler.DeleteCommentDBHandler(commentUuid, uuid)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response := struct {
+		Status       string `json:"status"`
+		Deleted      bool   `json:"deleted"`
+		CommentCount int    `json:"commentCount"`
+	}{
+		Status:       "success",
+		Deleted:      deleted,
+		CommentCount: count,
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
 }

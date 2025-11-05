@@ -36,5 +36,10 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("PATCH /request/interested/{postuuid}", handlers.InterestedPostHandler)
 	mux.HandleFunc("PATCH /request/uninterested/{postuuid}", handlers.UninterestedPostHandler)
 
+	// --- comments ---------------------------------------------------------------------
+	mux.HandleFunc("GET /request/comments/{postuuid}", handlers.GetCommentHandler)
+	mux.HandleFunc("POST /request/comment/create", handlers.CreateCommentHandler)
+	mux.HandleFunc("DELETE /request/comment/delete/{commentuuid}", handlers.DeleteCommentHandler)
+
 	return mux
 }
