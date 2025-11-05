@@ -30,6 +30,7 @@ func Router() *http.ServeMux {
 	// app functions--------------------------------------------------------------------------------
 	mux.HandleFunc("POST /request/create/{section}", handlers.HandleRequestCreate)
 	mux.HandleFunc("GET /request/retrieve/{section}", handlers.HandleRequestRetrieve)
+	mux.HandleFunc("GET /request/my/{section}", handlers.HandleMyRequestRetrieve)
 	mux.HandleFunc("PATCH /request/done/{postid}", handlers.HandleRequestDone)
 	// --- interested ------------------------------------------------------------
 	mux.HandleFunc("PATCH /request/interested/{postuuid}", handlers.InterestedPostHandler)

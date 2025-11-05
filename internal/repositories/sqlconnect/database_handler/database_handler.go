@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hackathon/internal/models"
 	nosql "hackathon/internal/repositories/no_sql"
@@ -471,6 +472,9 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 	)
 
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, utils.ErrorHandler(err, "error making query")
 	}
 	defer rows.Close()
@@ -489,7 +493,7 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 		err = json.Unmarshal(locJSON, &post.Location)
 		if err != nil {
-			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+ string(locJSON)))
+			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+string(locJSON)))
 		}
 
 		posts = append(posts, post)
@@ -499,6 +503,56 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 	return posts, nil
 }
 
+func RetrieveMyRequestGetDB(uuid, section string) ([]models.Post, error) {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	posts := make([]models.Post, 0)
+
+	query := getGetMyQuery(section)
+
+	args := getGetMyArgs(uuid, section)
+
+	rows, err := db.Query(query,
+		args...,
+	)
+
+	if err != nil {
+		return nil, utils.ErrorHandler(err, "error making query")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var post models.Post
+		var locJSON []byte
+
+		scans := getGetMyScan(section, &post, &locJSON)
+
+		err := rows.Scan(scans...)
+
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, nil
+			}
+			return nil, utils.ErrorHandler(err, "error scanning database")
+		}
+
+		err = json.Unmarshal(locJSON, &post.Location)
+		if err != nil {
+			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+string(locJSON)))
+		}
+
+		posts = append(posts, post)
+
+	}
+
+	return posts, nil
+}
+
+// done --------------------------------------------------------------------------------------------------------------------
 func DonePatchRequestDB(postid string) error {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
