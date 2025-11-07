@@ -129,14 +129,25 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 
-	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
-	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
-		return
-	}
+	var page int
 
-	if page <= 0 {
+	pageStr := strings.TrimSpace(query.Get("page"))
+
+	if pageStr == "" {
+
 		page = 1
+
+	} else {
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if page <= 0 {
+			page = 1
+		}
+
 	}
 
 	if section != "moments" {
@@ -206,21 +217,30 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	}
 	query := r.URL.Query()
 
-	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
-	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
-		return
-	}
+	var page int
 
-	if page <= 0 {
+	pageStr := strings.TrimSpace(query.Get("page"))
+
+	if pageStr == "" {
 		page = 1
+	} else {
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if page <= 0 {
+			page = 1
+		}
+
 	}
 
 	section := r.PathValue("section")
 
 	section = strings.TrimSpace(section)
 
-	_, err = checkSection(section)
+	_, err := checkSection(section)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -384,14 +404,23 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := r.URL.Query()
 
-	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
-	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
-		return
-	}
+	var page int
 
-	if page <= 0 {
+	pageStr := strings.TrimSpace(query.Get("page"))
+
+	if pageStr == "" {
 		page = 1
+	} else {
+		page, err := strconv.Atoi(pageStr)
+		if err != nil {
+			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if page <= 0 {
+			page = 1
+		}
+
 	}
 
 	postUuid := r.PathValue("postuuid")
