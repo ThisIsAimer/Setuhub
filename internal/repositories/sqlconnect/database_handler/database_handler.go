@@ -454,7 +454,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 }
 
-func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) ([]models.Post, error) {
+func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coordinates) ([]models.Post, error) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -466,7 +466,7 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 
 	query := getGetAppQuery(section)
 
-	args := getGetAppArgs(uuid, section, coordinates)
+	args := getGetAppArgs(uuid, section, page, coordinates)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -510,7 +510,7 @@ func RetrieveRequestGetDB(uuid, section string, coordinates models.Coordinates) 
 	return posts, nil
 }
 
-func RetrieveMyRequestGetDB(uuid, section string) ([]models.Post, error) {
+func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, error) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error connecting to database")
@@ -521,7 +521,7 @@ func RetrieveMyRequestGetDB(uuid, section string) ([]models.Post, error) {
 
 	query := getGetMyQuery(section)
 
-	args := getGetMyArgs(uuid, section)
+	args := getGetMyArgs(uuid, section, page)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -687,12 +687,16 @@ func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, error) {
 
 // comments------------------------------------------------------------------------------------------------------------------
 
-func GetCommentDBHandler(postUuid, uuid string) ([]models.Comment, error) {
+func GetCommentDBHandler(postUuid, uuid string, page int) ([]models.Comment, error) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "error connecting to database")
 	}
 	defer db.Close()
+
+	limit := 20
+
+	offset := (page - 1) * limit
 
 	query := `
  	SELECT c.comment_uuid, c.uuid, c.content, c.edited, c.created_at, u.profile_photo_url
@@ -700,9 +704,9 @@ func GetCommentDBHandler(postUuid, uuid string) ([]models.Comment, error) {
 	  JOIN users AS u ON c.uuid = u.uuid
 	  WHERE c.post_uuid = $1::uuid
 	  ORDER BY (uuid = $2::text) DESC, created_at DESC, comment_uuid DESC
-	LIMIT $3::int;
+	LIMIT $3::int OFFSET $4;
   `
-	rows, err := db.Query(query, postUuid, uuid, 20)
+	rows, err := db.Query(query, postUuid, uuid, limit, offset)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

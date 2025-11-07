@@ -33,6 +33,7 @@ func main() {
 	whiteList := []string{
 		"latitude",
 		"longitude",
+		"page",
 	}
 
 	hppSettings := &mid.HppOptions{

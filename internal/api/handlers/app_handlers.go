@@ -127,8 +127,19 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	var coordinates models.Coordinates
 
+	query := r.URL.Query()
+
+	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if page <= 0 {
+		page = 1
+	}
+
 	if section != "moments" {
-		query := r.URL.Query()
 
 		latStr := query.Get("latitude")
 		lngStr := query.Get("longitude")
@@ -152,7 +163,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, coordinates)
+	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, page, coordinates)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -193,18 +204,29 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
+	query := r.URL.Query()
+
+	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if page <= 0 {
+		page = 1
+	}
 
 	section := r.PathValue("section")
 
 	section = strings.TrimSpace(section)
 
-	_, err := checkSection(section)
+	_, err = checkSection(section)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	posts, err := databasehandler.RetrieveMyRequestGetDB(uuid, section)
+	posts, err := databasehandler.RetrieveMyRequestGetDB(uuid, section, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -360,6 +382,18 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	query := r.URL.Query()
+
+	page, err := strconv.Atoi(strings.TrimSpace(query.Get("page")))
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if page <= 0 {
+		page = 1
+	}
+
 	postUuid := r.PathValue("postuuid")
 
 	postUuid = strings.TrimSpace(postUuid)
@@ -369,7 +403,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	comments, err := databasehandler.GetCommentDBHandler(postUuid, uuid)
+	comments, err := databasehandler.GetCommentDBHandler(postUuid, uuid, page)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

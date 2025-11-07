@@ -1,24 +1,47 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"time"
+	"strconv"
 )
 
 func main() {
 
-	type Post struct {
-		Title     string    `json:"title"`
-		CreatedAt time.Time `json:"created_at"`
-	}
+	number := "-2"
 
-	p := Post{
-		Title:     "Test",
-		CreatedAt: time.Now(),
-	}
+	num, _ := strconv.Atoi(number)
 
-	b, _ := json.Marshal(p)
-	fmt.Println(string(b))
+	fmt.Println(num)
+
+	number = "-10"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
+	number = "-100"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
+	number = "-1000"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
+	number = "-10000"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
+	number = "-100000"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
+	number = "-1000000"
+
+	num, _ = strconv.Atoi(number)
+
+	fmt.Println(num)
 
 }
