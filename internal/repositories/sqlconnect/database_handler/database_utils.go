@@ -137,7 +137,7 @@ func getGetAppArgs(uuid, section string, page int, coordinates models.Coordinate
 	default:
 		cutoff = time.Now().UTC().Add(-30 * time.Minute)
 	}
-	now := time.Now().UTC() // renamed from `time`
+	now := time.Now().UTC() 
 
 	limit := 20
 

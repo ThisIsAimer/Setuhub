@@ -13,8 +13,6 @@ type User struct {
 	Role            string `json:"role,omitempty" db:"role,omitempty"`
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
 
-	FirebaseToken string `json:"firebaseToken,omitempty" db:"firebase_token,omitempty"`
-
 	UserInfo
 
 	ProfilePhotoURL string `json:"profilePhotoUrl" db:"profile_photo_url"`
