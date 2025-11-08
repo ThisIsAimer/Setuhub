@@ -565,6 +565,35 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, erro
 	return posts, nil
 }
 
+// expo token--------------------------------------------------------------------
+
+func SetExpoTokenDbHandler(uuid, token string) error {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "error connecting to database")
+	}
+	defer db.Close()
+
+	query := `UPDATE users SET expo_token = $1 WHERE uuid = $2;`
+
+	res, err := db.Exec(query, token, uuid)
+	if err != nil {
+		return utils.ErrorHandler(err, "error updating query")
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return utils.ErrorHandler(err, "error getting affected rows")
+	}
+
+	if rows == 0 {
+		return utils.ErrorHandler(fmt.Errorf("no uuid found"), "no uuid found")
+	}
+
+	return nil
+}
+
 // done --------------------------------------------------------------------------------------------------------------------
 func DonePatchRequestDB(postid string) error {
 	db, err := sqlconnect.ConnectDB()

@@ -279,6 +279,52 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// expo token-----------------------------------------------------------------------------------------------------------------
+func SetExpoToken(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	var request = struct {
+		ExpoToken string `json:"expoToken,omitempty"`
+	}{}
+
+	err := decoder.Decode(&request)
+	if err != nil {
+		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		return
+
+	}
+
+	err = databasehandler.SetExpoTokenDbHandler(uuid, request.ExpoToken)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := struct {
+		Status string `json:"status"`
+	}{
+		Status: "success",
+	}
+
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response")
+		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+// done -----------------------------------------------------------------------------------------------------
 func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	postId := r.PathValue("postid")
 
