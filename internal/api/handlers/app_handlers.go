@@ -280,7 +280,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 }
 
 // expo token-----------------------------------------------------------------------------------------------------------------
-func SetExpoToken(w http.ResponseWriter, r *http.Request) {
+func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
@@ -293,7 +293,7 @@ func SetExpoToken(w http.ResponseWriter, r *http.Request) {
 	decoder.DisallowUnknownFields()
 
 	var request = struct {
-		ExpoToken string `json:"expoToken,omitempty"`
+		FirebaseToken string `json:"firebaseToken,omitempty"`
 	}{}
 
 	err := decoder.Decode(&request)
@@ -303,7 +303,7 @@ func SetExpoToken(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	err = databasehandler.SetExpoTokenDbHandler(uuid, request.ExpoToken)
+	err = databasehandler.SetFirebaseTokenDbHandler(uuid, request.FirebaseToken)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

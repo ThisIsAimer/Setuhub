@@ -33,7 +33,7 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("GET /request/my/{section}", handlers.HandleMyRequestRetrieve)
 	mux.HandleFunc("PATCH /request/done/{postid}", handlers.HandleRequestDone)
 	// --- expo--------------------------------------------------------------------
-	mux.HandleFunc("POST /set/expo", handlers.SetExpoToken)
+	mux.HandleFunc("POST /set/token", handlers.SetFirebaseToken)
 	// --- interested ------------------------------------------------------------
 	mux.HandleFunc("PATCH /request/interested/{postuuid}", handlers.InterestedPostHandler)
 	mux.HandleFunc("PATCH /request/uninterested/{postuuid}", handlers.UninterestedPostHandler)

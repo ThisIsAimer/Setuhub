@@ -567,7 +567,7 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, erro
 
 // expo token--------------------------------------------------------------------
 
-func SetExpoTokenDbHandler(uuid, token string) error {
+func SetFirebaseTokenDbHandler(uuid, token string) error {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -575,7 +575,7 @@ func SetExpoTokenDbHandler(uuid, token string) error {
 	}
 	defer db.Close()
 
-	query := `UPDATE users SET expo_token = $1 WHERE uuid = $2;`
+	query := `UPDATE users SET firebase_token = $1 WHERE uuid = $2;`
 
 	res, err := db.Exec(query, token, uuid)
 	if err != nil {
