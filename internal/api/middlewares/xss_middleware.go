@@ -19,9 +19,9 @@ func XSSMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// sanitize path-----------------------------------------------------------------------------------------
-		sanitizedPath, err := clean(r.URL.Path)
-		if err != nil {
-			http.Error(w, "invalid path", http.StatusInternalServerError)
+		sanitizedPath, myErr := clean(r.URL.Path)
+		if myErr.MyError != nil {
+			utils.WriteJSONError(w, "invalid path", http.StatusInternalServerError)
 			return
 		}
 
@@ -31,17 +31,17 @@ func XSSMiddleware(next http.Handler) http.Handler {
 		sanitizedQuery := make(map[string][]string)
 
 		for k, values := range params {
-			sanitizedKey, err := clean(k)
-			if err != nil {
-				http.Error(w, "query key is invalid", http.StatusInternalServerError)
+			sanitizedKey, myErr := clean(k)
+			if myErr.MyError != nil {
+				utils.WriteJSONError(w, "query key is invalid", http.StatusInternalServerError)
 				return
 			}
 
 			var sanatizedValues []string
 			for _, v := range values {
-				cleanValue, err := clean(v)
-				if err != nil {
-					http.Error(w, "query value is invalid", http.StatusInternalServerError)
+				cleanValue, myErr := clean(v)
+				if myErr.MyError != nil {
+					utils.WriteJSONError(w, "query value is invalid", http.StatusInternalServerError)
 					return
 				}
 				sanatizedValues = append(sanatizedValues, cleanValue.(string))
@@ -60,7 +60,8 @@ func XSSMiddleware(next http.Handler) http.Handler {
 			if r.Body != nil {
 				bodyBytes, err := io.ReadAll(r.Body)
 				if err != nil {
-					http.Error(w, utils.ErrorHandler(err, "error reading request body").Error(), http.StatusUnsupportedMediaType)
+					myErr := utils.ErrorHandler(err, "error reading request body", http.StatusUnsupportedMediaType)
+					utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 					return
 				}
 
@@ -72,13 +73,14 @@ func XSSMiddleware(next http.Handler) http.Handler {
 					var inputData any
 					err := json.NewDecoder(bytes.NewReader([]byte(bodyString))).Decode(&inputData)
 					if err != nil {
-						http.Error(w, utils.ErrorHandler(err, "invalid json body in xss").Error(), http.StatusUnsupportedMediaType)
+						myErr := utils.ErrorHandler(err, "invalid json body in xss", http.StatusUnsupportedMediaType)
+						utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 						return
 					}
 
-					sanitizedData, err := clean(inputData)
+					sanitizedData, myErr := clean(inputData)
 					if err != nil {
-						http.Error(w, err.Error(), http.StatusInternalServerError)
+						utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 						return
 					}
 
@@ -86,7 +88,7 @@ func XSSMiddleware(next http.Handler) http.Handler {
 
 					sanitizedBody, err := json.Marshal(sanitizedData)
 					if err != nil {
-						http.Error(w, "error martialing sanitized data", http.StatusInternalServerError)
+						utils.WriteJSONError(w, "error martialing sanitized data", http.StatusInternalServerError)
 						return
 					}
 
@@ -96,8 +98,8 @@ func XSSMiddleware(next http.Handler) http.Handler {
 			}
 
 		} else if r.Header.Get("Content-Type") != "" {
-			myErr := utils.ErrorHandler(fmt.Errorf("non application/json body"), "unsupported json body")
-			http.Error(w, myErr.Error(), http.StatusUnsupportedMediaType)
+			myErr := utils.ErrorHandler(fmt.Errorf("non application/json body"), "unsupported json body", http.StatusUnsupportedMediaType)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -108,7 +110,7 @@ func XSSMiddleware(next http.Handler) http.Handler {
 
 //clean sanitizes input data
 
-func clean(data any) (any, error) {
+func clean(data any) (any, utils.Errorhandler) {
 
 	switch d := data.(type) {
 	case map[string]any:
@@ -116,20 +118,20 @@ func clean(data any) (any, error) {
 			d[k] = sanitizeValue(v)
 		}
 
-		return d, nil
+		return d, utils.Errorhandler{}
 
 	case []any:
 		for i, v := range d {
 			d[i] = sanitizeValue(v)
 		}
 
-		return d, nil
+		return d, utils.Errorhandler{}
 
 	case string:
-		return sanitizeString(d), nil
+		return sanitizeString(d), utils.Errorhandler{}
 
 	default:
-		return nil, utils.ErrorHandler(fmt.Errorf("unsupported type: %T", data), fmt.Sprintf("unsupported type: %T", data))
+		return nil, utils.ErrorHandler(fmt.Errorf("unsupported type: %T", data), fmt.Sprintf("unsupported type: %T", data), http.StatusUnsupportedMediaType)
 	}
 
 }

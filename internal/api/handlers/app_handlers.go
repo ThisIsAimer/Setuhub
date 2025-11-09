@@ -15,7 +15,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -23,10 +23,10 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	postType, err := checkSection(section)
+	postType, myErr := checkSection(section)
 
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -35,9 +35,10 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	var newPost models.Post
 
-	err = decoder.Decode(&newPost)
+	err := decoder.Decode(&newPost)
 	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -45,7 +46,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	if section != "moments" {
 		if newPost.Longitude == 0 && newPost.Latitude == 0 {
-			http.Error(w, utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided").Error(), http.StatusBadRequest)
+			myErr := utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 	}
@@ -54,7 +56,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	newPost.Description = strings.TrimSpace(newPost.Description)
 
 	if newPost.Description == "" {
-		http.Error(w, utils.ErrorHandler(fmt.Errorf("no description Provided"), "no description Provided").Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("no description Provided"), "no description Provided", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -63,7 +66,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	newPost, err = databasehandler.CreateRequestPostDB(uuid, section, newPost, noti)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -82,8 +85,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(response)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "Failed to encode response")
-			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 	} else {
@@ -98,8 +101,8 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 		err = json.NewEncoder(w).Encode(response)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "Failed to encode response")
-			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -111,7 +114,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -119,9 +122,9 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	_, err := checkSection(section)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	_, myErr := checkSection(section)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -140,7 +143,8 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -156,20 +160,23 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		lngStr := query.Get("longitude")
 
 		if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
-			myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given")
-			http.Error(w, myErr.Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
+		var err error
 
 		coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
 		if err != nil {
-			http.Error(w, utils.ErrorHandler(err, "invalid latitude parameter").Error(), http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "invalid latitude parameter", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
 		coordinates.Longitude, err = strconv.ParseFloat(lngStr, 64)
 		if err != nil {
-			http.Error(w, utils.ErrorHandler(err, "invalid longitude parameter").Error(), http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "invalid longitude parameter", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 	}
@@ -177,7 +184,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, page, coordinates)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -201,8 +208,8 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -212,7 +219,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 	query := r.URL.Query()
@@ -226,7 +233,8 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -240,16 +248,16 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	_, err := checkSection(section)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	_, myErr := checkSection(section)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	posts, err := databasehandler.RetrieveMyRequestGetDB(uuid, section, page)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -273,8 +281,8 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -285,7 +293,7 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -298,7 +306,8 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&request)
 	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 
 	}
@@ -306,7 +315,7 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 	err = databasehandler.SetFirebaseTokenDbHandler(uuid, request.FirebaseToken)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -318,8 +327,8 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -329,14 +338,14 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	postId := r.PathValue("postid")
 
 	if postId == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "no postid given")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "no postid given", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	err := databasehandler.DonePatchRequestDB(postId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -350,8 +359,8 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -360,7 +369,7 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -369,14 +378,14 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	postUuid = strings.TrimSpace(postUuid)
 
 	if postUuid == "" {
-		http.Error(w, "invalid postuuid", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "invalid postuuid", http.StatusUnauthorized)
 		return
 	}
 
 	result, err := databasehandler.InterestedPostHandler(uuid, postUuid)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -394,8 +403,8 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -404,19 +413,19 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
 	postUuid := strings.TrimSpace(r.PathValue("postuuid"))
 	if postUuid == "" {
-		http.Error(w, "invalid postuuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "invalid postuuid", http.StatusBadRequest)
 		return
 	}
 
 	result, err := databasehandler.UninterestedPost(uuid, postUuid)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -431,8 +440,8 @@ func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		InterestedCount: result.InterestedCount,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -444,7 +453,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -459,7 +468,8 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			http.Error(w, utils.ErrorHandler(err, "invalid page").Error(), http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -474,13 +484,13 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	postUuid = strings.TrimSpace(postUuid)
 
 	if postUuid == "" {
-		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 
 	comments, err := databasehandler.GetCommentDBHandler(postUuid, uuid, page)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -493,8 +503,8 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Comments: comments,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -505,7 +515,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -516,13 +526,14 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&comment)
 	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	comment.Content = strings.TrimSpace(comment.Content)
 	if comment.Content == "" {
-		http.Error(w, "comment empty", http.StatusBadRequest)
+		utils.WriteJSONError(w, "comment empty", http.StatusBadRequest)
 		return
 	}
 
@@ -531,7 +542,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	comment, err = databasehandler.CreateCommentDBHandler(comment)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -544,8 +555,8 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Comment: comment,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -555,7 +566,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -564,7 +575,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentUuid = strings.TrimSpace(commentUuid)
 
 	if commentUuid == "" {
-		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 
@@ -577,19 +588,20 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&request)
 	if err != nil {
-		http.Error(w, utils.ErrorHandler(err, "error decoding json body").Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	request.Content = strings.TrimSpace(request.Content)
 	if request.Content == "" {
-		http.Error(w, "content empty", http.StatusBadRequest)
+		utils.WriteJSONError(w, "content empty", http.StatusBadRequest)
 		return
 	}
 
 	edited, err := databasehandler.EditCommentDBHandler(commentUuid, uuid, request.Content)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -602,8 +614,8 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Edited: edited,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 }
@@ -613,7 +625,7 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		http.Error(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -622,14 +634,14 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentUuid = strings.TrimSpace(commentUuid)
 
 	if commentUuid == "" {
-		http.Error(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 
 	deleted, count, err := databasehandler.DeleteCommentDBHandler(commentUuid, uuid)
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -646,8 +658,8 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response")
-		http.Error(w, myErr.Error(), http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 

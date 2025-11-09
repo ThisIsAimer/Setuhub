@@ -17,8 +17,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "unauthorised")
-			http.Error(w, myErr.Error(), http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "unauthorised", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -31,25 +31,25 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				myErr := utils.ErrorHandler(err, "token expired")
-				http.Error(w, myErr.Error(), http.StatusUnauthorized)
+				myErr := utils.ErrorHandler(err, "token expired", http.StatusUnauthorized)
+				utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 				return
 			}
-			myErr := utils.ErrorHandler(err, "unauthorised access")
-			http.Error(w, myErr.Error(), http.StatusUnauthorized)
+			myErr := utils.ErrorHandler(err, "unauthorised access", http.StatusUnauthorized)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
 		if !parsedToken.Valid {
-			http.Error(w, "invalid token", http.StatusUnauthorized)
+			utils.WriteJSONError(w, "invalid token", http.StatusUnauthorized)
 			log.Println("invalid jwt:", token.Value)
 		}
 
 		claims, ok := parsedToken.Claims.(jwt.MapClaims)
 
 		if !ok {
-			myErr := utils.ErrorHandler(err, "unauthorised token")
-			http.Error(w, myErr.Error(), http.StatusUnauthorized)
+			myErr := utils.ErrorHandler(err, "unauthorised token", http.StatusUnauthorized)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
@@ -58,8 +58,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		path := normalizePath(r.URL.Path)
 
 		unauthorized := func(msg string) {
-			myErr := utils.ErrorHandler(errors.New(msg), msg)
-			http.Error(w, myErr.Error(), http.StatusUnauthorized)
+			myErr := utils.ErrorHandler(errors.New(msg), msg, http.StatusUnauthorized)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		}
 
 		switch auth {

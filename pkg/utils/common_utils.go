@@ -2,19 +2,32 @@ package utils
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 
 	"golang.org/x/crypto/argon2"
 )
 
-func ErrorHandler(err error, message string) error {
+type Errorhandler struct {
+	MyError error
+	Status  int
+}
+
+func WriteJSONError(w http.ResponseWriter, message string, status int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(map[string]string{"error": message})
+}
+
+func ErrorHandler(err error, message string, status int) Errorhandler {
 	errorLogger := log.New(os.Stderr, "ERROR:", log.Ldate|log.Ltime|log.Lshortfile)
 	errorLogger.Println(message, ":-", err)
 
-	return fmt.Errorf("%v", message)
+	return Errorhandler{MyError: fmt.Errorf(message), Status: status}
 }
 
 func PassEncoder(password string, salt []byte) (string, error) {
