@@ -7,7 +7,6 @@ import (
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -148,7 +147,7 @@ func sendNotifications(post models.Post, noti chan string) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "unable to notify", http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "unable to notify", 0)
 		noti <- myErr.MyError.Error()
 		return
 	}
@@ -160,7 +159,7 @@ func sendNotifications(post models.Post, noti chan string) {
 		post.Longitude, post.Latitude, post.Radius,
 	)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "unable to notify", http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "unable to notify", 0)
 		noti <- myErr.MyError.Error()
 		return
 	}
@@ -174,7 +173,7 @@ func sendNotifications(post models.Post, noti chan string) {
 		err := rows.Scan(&token)
 
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "unable to notify", http.StatusInternalServerError)
+			myErr := utils.ErrorHandler(err, "unable to notify", 0)
 			noti <- myErr.MyError.Error()
 			return
 		}
@@ -187,7 +186,7 @@ func sendNotifications(post models.Post, noti chan string) {
 
 	fcmConn, err := newFCM()
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "unable to notify", http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "unable to notify", 0)
 		noti <- myErr.MyError.Error()
 		return
 	}
@@ -197,7 +196,7 @@ func sendNotifications(post models.Post, noti chan string) {
 
 	notified, err := sendToMany(ctx, fcmConn, tokens, post)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "unable to notify", http.StatusInternalServerError)
+		myErr := utils.ErrorHandler(err, "unable to notify", 0)
 		noti <- myErr.MyError.Error()
 		return
 	}
