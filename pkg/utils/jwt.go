@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -14,7 +16,7 @@ func SignToken(userId, role, auth string) (string, error) {
 	jwtExpires := os.Getenv("JWT_EXPIRES_IN")
 
 	claims := jwt.MapClaims{
-		"uuid":  userId,
+		"uuid": userId,
 		"role": role,
 		"auth": auth,
 	}
@@ -22,7 +24,8 @@ func SignToken(userId, role, auth string) (string, error) {
 	if jwtExpires != "" {
 		duration, err := time.ParseDuration(jwtExpires)
 		if err != nil {
-			return "", ErrorHandler(err, "jwt expire error")
+			log.Println(err)
+			return "", fmt.Errorf("error parsing jwt duration")
 		}
 		claims["exp"] = time.Now().Add(duration).Unix()
 	} else {
@@ -33,7 +36,8 @@ func SignToken(userId, role, auth string) (string, error) {
 	signedToken, err := token.SignedString([]byte(jwtSecret))
 
 	if err != nil {
-		return "", ErrorHandler(err, "error siggning token")
+		log.Println(err)
+		return "", fmt.Errorf("couldnt sign token")
 	}
 
 	return signedToken, nil

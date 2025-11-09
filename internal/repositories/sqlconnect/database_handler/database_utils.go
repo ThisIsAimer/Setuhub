@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"hackathon/internal/models"
-	"hackathon/pkg/utils"
 	"math/rand"
 	"os"
 	"strings"
@@ -31,10 +30,10 @@ func sendOTP(to, otp string) error {
 	apiKey := strings.TrimSpace(os.Getenv("SENDGRID_API_KEY"))
 
 	if fromEmail == "" || apiKey == "" {
-		return utils.ErrorHandler(errors.New("missing FROM_EMAIL or SENDGRID_API_KEY"), "failed to send otp")
+		return errors.New("missing FROM_EMAIL or SENDGRID_API_KEY")
 	}
 	if to == "" || otp == "" {
-		return utils.ErrorHandler(errors.New("missing recipient or otp"), "failed to send otp")
+		return errors.New("missing recipient or otp")
 	}
 
 	from := mail.NewEmail(fromName, fromEmail)
@@ -71,7 +70,7 @@ func sendOTP(to, otp string) error {
 		return fmt.Errorf("sendgrid send failed: %w", err)
 	}
 	if resp.StatusCode >= 400 {
-		return utils.ErrorHandler(fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body), "failed to send otp")
+		return fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body)
 	}
 	return nil
 }
@@ -101,7 +100,7 @@ func getPostAppArgs(uuid, section string, post models.Post) ([]any, error) {
 
 	locJSON, err := json.Marshal(post.Location)
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "error parsing location")
+		return nil, err
 	}
 
 	args["helpnearby"] = []any{uuid, section, post.Title, post.Description, post.Longitude, post.Latitude, post.Radius, locJSON}
@@ -137,7 +136,7 @@ func getGetAppArgs(uuid, section string, page int, coordinates models.Coordinate
 	default:
 		cutoff = time.Now().UTC().Add(-30 * time.Minute)
 	}
-	now := time.Now().UTC() 
+	now := time.Now().UTC()
 
 	limit := 20
 

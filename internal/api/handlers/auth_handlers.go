@@ -49,9 +49,9 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	myErr := isValidEmailFormat(newUser.Email)
+	err = isValidEmailFormat(newUser.Email)
 
-	if myErr.MyError != nil {
+	if err != nil {
 		utils.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -67,9 +67,9 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newUser, err = databasehandler.SignUpDBHandler(newUser)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	newUser, myErr := databasehandler.SignUpDBHandler(newUser)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -162,10 +162,10 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 
-	user, err = databasehandler.SignupOtpDBHandler(uuid, role, otp.Otp)
+	user, myErr := databasehandler.SignupOtpDBHandler(uuid, role, otp.Otp)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -244,10 +244,10 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := databasehandler.AuthenticationDBhandler(uuid, userInfo)
+	user, myErr := databasehandler.AuthenticationDBhandler(uuid, userInfo)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -306,9 +306,9 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err = databasehandler.LoginDBHandlerFunc(user.Email, user.Password)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	user, myErr := databasehandler.LoginDBHandlerFunc(user.Email, user.Password)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -402,9 +402,9 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := databasehandler.ForgotPasswordDBHandler(req.Email)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	user, myErr := databasehandler.ForgotPasswordDBHandler(req.Email)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -487,9 +487,9 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.ResetPassExecDBHandler(uuid, req.Otp, req.NewPassword)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	myErr := databasehandler.ResetPassExecDBHandler(uuid, req.Otp, req.NewPassword)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -544,9 +544,9 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.UpdateCoordinates(uuid, coordinates)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	myErr := databasehandler.UpdateCoordinates(uuid, coordinates)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -576,9 +576,9 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := databasehandler.ProfileInfoDB(uuid)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	user, myErr := databasehandler.ProfileInfoDB(uuid)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -591,7 +591,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		Data:   user,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
@@ -636,10 +636,10 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = databasehandler.UpdateProfilePhotoDB(uuid, request.ProfilePhotoUrl)
+	myErr := databasehandler.UpdateProfilePhotoDB(uuid, request.ProfilePhotoUrl)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 

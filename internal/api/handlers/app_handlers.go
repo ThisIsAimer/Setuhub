@@ -23,10 +23,10 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	postType, myErr := checkSection(section)
+	postType, err := checkSection(section)
 
-	if myErr.MyError != nil {
-		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusBadRequest)
+	if err != nil {
+		utils.WriteJSONError(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -35,7 +35,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	var newPost models.Post
 
-	err := decoder.Decode(&newPost)
+	err = decoder.Decode(&newPost)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
@@ -63,10 +63,10 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	noti := make(chan string)
 
-	newPost, err = databasehandler.CreateRequestPostDB(uuid, section, newPost, noti)
+	newPost, myErr := databasehandler.CreateRequestPostDB(uuid, section, newPost, noti)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -122,9 +122,9 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	_, myErr := checkSection(section)
-	if myErr.MyError != nil {
-		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusInternalServerError)
+	_, err := checkSection(section)
+	if err != nil {
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -164,7 +164,6 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
-		var err error
 
 		coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
 		if err != nil {
@@ -181,10 +180,10 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	posts, err := databasehandler.RetrieveRequestGetDB(uuid, section, page, coordinates)
+	posts, myErr := databasehandler.RetrieveRequestGetDB(uuid, section, page, coordinates)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -248,16 +247,16 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	section = strings.TrimSpace(section)
 
-	_, myErr := checkSection(section)
-	if myErr.MyError != nil {
-		utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusInternalServerError)
+	_, err := checkSection(section)
+	if err != nil {
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	posts, err := databasehandler.RetrieveMyRequestGetDB(uuid, section, page)
+	posts, myErr := databasehandler.RetrieveMyRequestGetDB(uuid, section, page)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -312,10 +311,10 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	err = databasehandler.SetFirebaseTokenDbHandler(uuid, request.FirebaseToken)
+	myErr := databasehandler.SetFirebaseTokenDbHandler(uuid, request.FirebaseToken)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -343,9 +342,9 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := databasehandler.DonePatchRequestDB(postId)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	myErr := databasehandler.DonePatchRequestDB(postId)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -357,7 +356,7 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 		Status: "success",
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
@@ -382,10 +381,10 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := databasehandler.InterestedPostHandler(uuid, postUuid)
+	result, myErr := databasehandler.InterestedPostHandler(uuid, postUuid)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -401,7 +400,7 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		InterestedCount: result.InterestedCount,
 	}
 
-	err = json.NewEncoder(w).Encode(response)
+	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
@@ -423,9 +422,9 @@ func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := databasehandler.UninterestedPost(uuid, postUuid)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	result, myErr := databasehandler.UninterestedPost(uuid, postUuid)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -488,9 +487,9 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	comments, err := databasehandler.GetCommentDBHandler(postUuid, uuid, page)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	comments, myErr := databasehandler.GetCommentDBHandler(postUuid, uuid, page)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -539,10 +538,10 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	comment.Uuid = uuid
 
-	comment, err = databasehandler.CreateCommentDBHandler(comment)
+	comment, myErr := databasehandler.CreateCommentDBHandler(comment)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -599,9 +598,9 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	edited, err := databasehandler.EditCommentDBHandler(commentUuid, uuid, request.Content)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	edited, myErr := databasehandler.EditCommentDBHandler(commentUuid, uuid, request.Content)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
@@ -638,10 +637,10 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deleted, count, err := databasehandler.DeleteCommentDBHandler(commentUuid, uuid)
+	deleted, count, myErr := databasehandler.DeleteCommentDBHandler(commentUuid, uuid)
 
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 

@@ -79,7 +79,7 @@ func XSSMiddleware(next http.Handler) http.Handler {
 					}
 
 					sanitizedData, myErr := clean(inputData)
-					if err != nil {
+					if myErr.MyError != nil {
 						utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 						return
 					}

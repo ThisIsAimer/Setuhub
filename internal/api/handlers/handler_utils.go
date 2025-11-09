@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"hackathon/pkg/utils"
-	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
@@ -25,16 +23,16 @@ func checkEmptyField(modle any) error {
 	return nil
 }
 
-func isValidEmailFormat(email string) utils.Errorhandler {
+func isValidEmailFormat(email string) error {
 	var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
 	if !emailRegex.MatchString(email) {
-		return utils.ErrorHandler(fmt.Errorf("email format wrong"), "invalid email", http.StatusBadRequest)
+		return fmt.Errorf("email format wrong")
 	}
-	return utils.Errorhandler{}
+	return nil
 }
 
-func checkSection(section string) (string, utils.Errorhandler) {
+func checkSection(section string) (string, error) {
 
 	mySectrion := strings.TrimSpace(section)
 
@@ -48,8 +46,8 @@ func checkSection(section string) (string, utils.Errorhandler) {
 
 	switch mySectrion {
 	case "helpnearby", "impactevents", "moments", "missingpeople", "bloodemergency":
-		return postType[section], utils.Errorhandler{}
+		return postType[section], nil
 	default:
-		return "", utils.ErrorHandler(fmt.Errorf("invalid section: %s", section), "invalid route", http.StatusBadRequest)
+		return "", fmt.Errorf("invalid section: %s", section)
 	}
 }

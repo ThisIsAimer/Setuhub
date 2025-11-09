@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,12 +28,13 @@ func ErrorHandler(err error, message string, status int) Errorhandler {
 	errorLogger := log.New(os.Stderr, "ERROR:", log.Ldate|log.Ltime|log.Lshortfile)
 	errorLogger.Println(message, ":-", err)
 
-	return Errorhandler{MyError: fmt.Errorf(message), Status: status}
+	shownError := errors.New(message)
+	return Errorhandler{MyError: shownError, Status: status}
 }
 
 func PassEncoder(password string, salt []byte) (string, error) {
 	if password == "" {
-		return "", ErrorHandler(fmt.Errorf("password is empty"), "password is required")
+		return "", fmt.Errorf("password is empty")
 	}
 
 	hash := argon2.IDKey([]byte(password), salt, 1, 64*1024, 4, 32)
@@ -48,24 +50,24 @@ func VerifyPassword(givenPass, realPass string) error {
 
 	parts := strings.Split(realPass, ".")
 	if len(parts) != 2 {
-		return ErrorHandler(fmt.Errorf("invalid encode hash format"), "Password must be reset")
+		return fmt.Errorf("invalid encode hash format")
 	}
 
 	saltBase64 := parts[0]
 
 	salt, err := base64.StdEncoding.DecodeString(saltBase64)
 	if err != nil {
-		return ErrorHandler(err, "error decoding salt")
+		return err
 	}
 
 	givenPass, err = PassEncoder(givenPass, salt)
 	if err != nil {
 		fmt.Println("error is:", err)
-		return ErrorHandler(err, "error encoding password")
+		return err
 	}
 
 	if givenPass != realPass {
-		return ErrorHandler(fmt.Errorf("password doesnt match"), "incorrect password")
+		return fmt.Errorf("password doesnt match")
 	}
 
 	return nil
