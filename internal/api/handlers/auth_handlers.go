@@ -90,8 +90,10 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Id     string `json:"id"`
 	}{
 		Status: "Success",
+		Id:     newUser.Uuid,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -321,13 +323,15 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	responce := struct {
+	response := struct {
 		Status string `json:"status"`
+		Id     string `json:"id"`
 	}{
-		Status: "success",
+		Status: "Success",
+		Id:     user.Uuid,
 	}
 
-	err = json.NewEncoder(w).Encode(responce)
+	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error encoding json")
@@ -415,13 +419,13 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	responce := struct {
+	response := struct {
 		Status string `json:"status"`
 	}{
 		Status: fmt.Sprintf("otp sent to email : %s", req.Email),
 	}
 
-	err = json.NewEncoder(w).Encode(responce)
+	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error encoding json")
@@ -483,13 +487,13 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	responce := struct {
+	response := struct {
 		Status string `json:"status"`
 	}{
 		Status: "password updated successfully, go login with the new password",
 	}
 
-	err = json.NewEncoder(w).Encode(responce)
+	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error encoding json")
@@ -538,13 +542,13 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	responce := struct {
+	response := struct {
 		Status string `json:"status"`
 	}{
 		Status: "success",
 	}
 
-	err = json.NewEncoder(w).Encode(responce)
+	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error encoding json")
@@ -570,7 +574,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	responce := struct {
+	response := struct {
 		Status string      `json:"status"`
 		Data   models.User `json:"data"`
 	}{
@@ -578,7 +582,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		Data:   user,
 	}
 
-	err = json.NewEncoder(w).Encode(responce)
+	err = json.NewEncoder(w).Encode(response)
 
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "error encoding json")
