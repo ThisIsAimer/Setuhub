@@ -7,6 +7,7 @@ import (
 	"hackathon/internal/repositories/sqlconnect"
 	"hackathon/pkg/utils"
 	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -19,7 +20,12 @@ import (
 func newFCM() (*messaging.Client, error) {
 	ctx := context.Background()
 	// Either rely on GOOGLE_APPLICATION_CREDENTIALS or pass the file:
-	opt := option.WithCredentialsFile("service-account.json")
+	credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if credPath == "" {
+		// fallback for local dev if env missing
+		credPath = "cmd/api/google-services.json"
+	}
+	opt := option.WithCredentialsFile(credPath)
 	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
 		return nil, err
