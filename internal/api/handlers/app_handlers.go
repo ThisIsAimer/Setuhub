@@ -15,7 +15,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -37,7 +37,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	err = decoder.Decode(&newPost)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -46,7 +46,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 
 	if section != "moments" {
 		if newPost.Longitude == 0 && newPost.Latitude == 0 {
-			myErr := utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "no coordinates provided", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(fmt.Errorf("invalid coordinates: pointing to null island"), "No coordinates provided", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -56,7 +56,7 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	newPost.Description = strings.TrimSpace(newPost.Description)
 
 	if newPost.Description == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("no description Provided"), "no description Provided", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("no description Provided"), "No description Provided", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -114,7 +114,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -143,7 +143,7 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Invalid page", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -160,21 +160,21 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		lngStr := query.Get("longitude")
 
 		if strings.TrimSpace(latStr) == "" || strings.TrimSpace(lngStr) == "" {
-			myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "lat or long not given", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(fmt.Errorf("lat or long not given"), "Lat or long not given", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
 		coordinates.Latitude, err = strconv.ParseFloat(latStr, 64)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "invalid latitude parameter", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Invalid latitude parameter", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
 		coordinates.Longitude, err = strconv.ParseFloat(lngStr, 64)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "invalid longitude parameter", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Invalid longitude parameter", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -218,7 +218,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 	query := r.URL.Query()
@@ -232,7 +232,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Invalid page", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -292,7 +292,7 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -305,7 +305,7 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&request)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 
@@ -337,7 +337,7 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	postId := r.PathValue("postid")
 
 	if postId == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "no postid given", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "No postid given", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -353,7 +353,7 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status string `json:"status"`
 	}{
-		Status: "success",
+		Status: "Success",
 	}
 
 	err := json.NewEncoder(w).Encode(response)
@@ -368,7 +368,7 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -377,7 +377,7 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	postUuid = strings.TrimSpace(postUuid)
 
 	if postUuid == "" {
-		utils.WriteJSONError(w, "invalid postuuid", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "Invalid postuuid", http.StatusUnauthorized)
 		return
 	}
 
@@ -395,7 +395,7 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		Change          bool   `json:"change"`
 		InterestedCount int    `json:"interestedCount"`
 	}{
-		Status:          "success",
+		Status:          "Success",
 		Change:          result.Changed,
 		InterestedCount: result.InterestedCount,
 	}
@@ -412,13 +412,13 @@ func InterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
 	postUuid := strings.TrimSpace(r.PathValue("postuuid"))
 	if postUuid == "" {
-		utils.WriteJSONError(w, "invalid postuuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Invalid postuuid", http.StatusBadRequest)
 		return
 	}
 
@@ -434,7 +434,7 @@ func UninterestedPostHandler(w http.ResponseWriter, r *http.Request) {
 		Change          bool   `json:"change"`
 		InterestedCount int    `json:"interestedCount"`
 	}{
-		Status:          "success",
+		Status:          "Success",
 		Change:          result.Changed,
 		InterestedCount: result.InterestedCount,
 	}
@@ -452,7 +452,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -467,7 +467,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		page, err := strconv.Atoi(pageStr)
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "invalid page", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Invalid page", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -483,7 +483,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 	postUuid = strings.TrimSpace(postUuid)
 
 	if postUuid == "" {
-		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 
@@ -498,7 +498,7 @@ func GetCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Status   string           `json:"status"`
 		Comments []models.Comment `json:"comments"`
 	}{
-		Status:   "success",
+		Status:   "Success",
 		Comments: comments,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -514,7 +514,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -525,14 +525,14 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&comment)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	comment.Content = strings.TrimSpace(comment.Content)
 	if comment.Content == "" {
-		utils.WriteJSONError(w, "comment empty", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Comment empty", http.StatusBadRequest)
 		return
 	}
 
@@ -550,7 +550,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Status  string         `json:"status"`
 		Comment models.Comment `json:"comment"`
 	}{
-		Status:  "success",
+		Status:  "Success",
 		Comment: comment,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -565,7 +565,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -574,7 +574,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentUuid = strings.TrimSpace(commentUuid)
 
 	if commentUuid == "" {
-		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 
@@ -594,7 +594,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	request.Content = strings.TrimSpace(request.Content)
 	if request.Content == "" {
-		utils.WriteJSONError(w, "content empty", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Content empty", http.StatusBadRequest)
 		return
 	}
 
@@ -609,7 +609,7 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 		Edited bool   `json:"edited"`
 	}{
-		Status: "success",
+		Status: "Success",
 		Edited: edited,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -624,7 +624,7 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -633,7 +633,7 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	commentUuid = strings.TrimSpace(commentUuid)
 
 	if commentUuid == "" {
-		utils.WriteJSONError(w, "invalid commentUuid", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Invalid commentUuid", http.StatusBadRequest)
 		return
 	}
 

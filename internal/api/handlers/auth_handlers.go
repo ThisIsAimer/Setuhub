@@ -17,7 +17,7 @@ import (
 func Home(w http.ResponseWriter, r *http.Request) {
 	_, err := w.Write([]byte("home!"))
 	if err != nil {
-		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "no postid given", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "No postid given", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -34,7 +34,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&newUser)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -44,7 +44,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	newUser.Password = strings.TrimSpace(newUser.Password)
 
 	if newUser.Email == "" || newUser.Uuid == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("please send all required fields"), "please send all required fields", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("please send all required fields"), "Please send all required fields", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -56,13 +56,13 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(newUser.Password) < 6 {
-		myErr := utils.ErrorHandler(fmt.Errorf("password too short"), "password must be at least 6 characters", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("password too short"), "Password must be at least 6 characters", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	if newUser.Password != newUser.ConfirmPassword {
-		myErr := utils.ErrorHandler(fmt.Errorf("passwords dont match"), "passwords dont match", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("password invalid"), "Password invalid", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -94,10 +94,8 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
-		Id     string `json:"id"`
 	}{
 		Status: "Success",
-		Id:     newUser.Uuid,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -115,32 +113,32 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
 	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
 	if !ok {
-		utils.WriteJSONError(w, "unauthorized", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
 	role, ok := r.Context().Value(utils.JwtKey("role")).(string)
 
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
 	if auth != "unverified" {
 
 		if auth == "mail" {
-			utils.WriteJSONError(w, "mail already verified", http.StatusBadRequest)
+			utils.WriteJSONError(w, "Mail already verified", http.StatusBadRequest)
 			return
 		}
 
 		if auth == "verified" {
-			utils.WriteJSONError(w, "user is authenticated", http.StatusBadRequest)
+			utils.WriteJSONError(w, "User is authenticated", http.StatusBadRequest)
 			return
 		}
 
@@ -155,7 +153,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&otp)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -215,7 +213,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 
 	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
 	if !ok {
-		utils.WriteJSONError(w, "unauthorized", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -231,7 +229,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&userInfo)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -239,7 +237,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	err = checkEmptyField(userInfo)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "one or user info fields empty", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "One or user info fields empty", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -295,13 +293,13 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&user)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	if user.Email == "" || user.Password == "" {
-		myErr := utils.ErrorHandler(err, "username and password are required", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Username and password are required", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -392,13 +390,13 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&req)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	if req.Email == "" {
-		utils.WriteJSONError(w, "please enter an email", http.StatusBadRequest)
+		utils.WriteJSONError(w, "Please enter an email", http.StatusBadRequest)
 		return
 	}
 
@@ -429,8 +427,10 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
-		Status: fmt.Sprintf("otp sent to email : %s", req.Email),
+		Status: "Success",
+		Message: fmt.Sprintf("Otp sent to email : %s", req.Email),
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -462,7 +462,7 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&req)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error decoding json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -470,19 +470,19 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 	req.NewPassword = strings.TrimSpace(req.NewPassword)
 
 	if len(req.NewPassword) < 6 {
-		myErr := utils.ErrorHandler(fmt.Errorf("password less then 6 characters"), "password must have atleast 6 characters", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("password less then 6 characters"), "Password must have atleast 6 characters", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	if req.NewPassword == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("new or confirm passwords are empty"), "empty json fields", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("new or confirm passwords are empty"), "Empty json fields", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	if req.NewPassword != req.ConfirmPassword {
-		myErr := utils.ErrorHandler(fmt.Errorf("new pass doesnt match confirm pass"), "both password fields doesnt match", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("new pass doesnt match confirm pass"), "New password and confirm password do not match", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -497,8 +497,10 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
-		Status: "password updated successfully, go login with the new password",
+		Status: "Success",
+		Message: "Password updated successfully, go login with the new password",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -517,7 +519,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -531,7 +533,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	err := decoder.Decode(&coordinates)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "invalid json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Invalid json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -539,7 +541,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	err = checkEmptyField(coordinates)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, " one or user info fields empty", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, " One or user info fields empty", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -554,7 +556,7 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status string `json:"status"`
 	}{
-		Status: "success",
+		Status: "Success",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -572,7 +574,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -587,7 +589,7 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 		Status string      `json:"status"`
 		Data   models.User `json:"data"`
 	}{
-		Status: "success",
+		Status: "Success",
 		Data:   user,
 	}
 
@@ -604,13 +606,13 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 // update profile pic -------------------------------------------------------------------------------------
 func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost && r.Method != http.MethodPatch {
-		utils.WriteJSONError(w, "method not allowed", http.StatusMethodNotAllowed)
+		utils.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok || uuid == "" {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
 		return
 	}
 
@@ -624,14 +626,14 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 
 	err := decoder.Decode(&request)
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "invalid json body", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Invalid json body", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
 	request.ProfilePhotoUrl = strings.TrimSpace(request.ProfilePhotoUrl)
 	if request.ProfilePhotoUrl == "" {
-		myErr := utils.ErrorHandler(fmt.Errorf("profilePhotoUrl is required"), "profilePhotoUrl is required", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf("profilePhotoUrl is required"), "ProfilePhotoUrl is required", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
@@ -647,7 +649,7 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status string `json:"status"`
 	}{
-		Status: "success",
+		Status: "Success",
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)

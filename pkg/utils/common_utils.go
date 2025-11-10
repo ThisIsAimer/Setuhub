@@ -21,7 +21,7 @@ type Errorhandler struct {
 func WriteJSONError(w http.ResponseWriter, message string, status int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{"error": message})
+	json.NewEncoder(w).Encode(map[string]string{"status": "Error", "message": message})
 }
 
 func ErrorHandler(err error, message string, status int) Errorhandler {
