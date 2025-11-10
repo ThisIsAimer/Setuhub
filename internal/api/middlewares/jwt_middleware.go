@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"hackathon/pkg/utils"
-	"log"
 	"net/http"
 	"os"
 
@@ -17,7 +16,7 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "unauthorised", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(err, "Unauthorised", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusBadRequest)
 			return
 		}
@@ -31,24 +30,25 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				myErr := utils.ErrorHandler(err, "token expired", http.StatusUnauthorized)
+				myErr := utils.ErrorHandler(err, "Token expired", http.StatusUnauthorized)
 				utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 				return
 			}
-			myErr := utils.ErrorHandler(err, "unauthorised access", http.StatusUnauthorized)
+			myErr := utils.ErrorHandler(err, "Unauthorised access", http.StatusUnauthorized)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
 
 		if !parsedToken.Valid {
-			utils.WriteJSONError(w, "invalid token", http.StatusUnauthorized)
-			log.Println("invalid jwt:", token.Value)
+			myErr := utils.ErrorHandler(errors.New("invalid token"+token.Value), "Invalid token", http.StatusUnauthorized)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			return
 		}
 
 		claims, ok := parsedToken.Claims.(jwt.MapClaims)
 
 		if !ok {
-			myErr := utils.ErrorHandler(err, "unauthorised token", http.StatusUnauthorized)
+			myErr := utils.ErrorHandler(err, "Unauthorised token", http.StatusUnauthorized)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 		}
@@ -68,25 +68,25 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		case "unverified":
 			if path != "/signup/otp" {
-				unauthorized("email not verified")
+				unauthorized("Email not verified")
 				return
 			}
 
 		case "mail":
 			if path != "/authenticate" {
-				unauthorized("email verified but not authenticated")
+				unauthorized("Email verified but not authenticated")
 				return
 			}
 
 		case "reset":
 			if path != "/login/forgotpassword/otp" {
-				unauthorized("please reset password first")
+				unauthorized("Please reset password first")
 				return
 			}
 
 		default:
 			// block unknown/missing auth states
-			unauthorized("invalid authentication state")
+			unauthorized("Invalid authentication state")
 			return
 		}
 

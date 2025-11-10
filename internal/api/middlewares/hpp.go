@@ -1,7 +1,7 @@
 package middlewares
 
 import (
-	"fmt"
+	"hackathon/pkg/utils"
 	"net/http"
 	"strings"
 )
@@ -17,7 +17,7 @@ func Hpp(options HppOptions) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if options.CheckBody && r.Method == http.MethodPost && isCorrectContentType(r, options.CheckBodyForContentType) {
-				filterBodyParams(r, options.WhiteList)
+				filterBodyParams(w, r, options.WhiteList)
 			}
 			if options.CheckQuery && r.URL.Query() != nil {
 				filterQueryParams(r, options.WhiteList)
@@ -49,10 +49,11 @@ func filterQueryParams(r *http.Request, whitelist []string) {
 	r.URL.RawQuery = query.Encode()
 }
 
-func filterBodyParams(r *http.Request, whitelist []string) {
+func filterBodyParams(w http.ResponseWriter, r *http.Request, whitelist []string) {
 	err := r.ParseForm()
 	if err != nil {
-		fmt.Println("error is:", err)
+		myErr := utils.ErrorHandler(err, "error is:"+err.Error(), http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 

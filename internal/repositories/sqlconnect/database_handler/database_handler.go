@@ -22,14 +22,14 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
 	rdb, err := nosql.RedisCliant()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to (rdb)", http.StatusInternalServerError)
 	}
 
 	defer rdb.Close()
@@ -38,7 +38,7 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 	var count int
 	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE email = $1", newUser.Email).Scan(&count)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error running count query", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error running count query", http.StatusInternalServerError)
 	}
 
 	if count != 0 {
@@ -48,13 +48,13 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 		)
 
 		if err != nil {
-			return models.User{}, utils.ErrorHandler(err, "user not found", http.StatusInternalServerError)
+			return models.User{}, utils.ErrorHandler(err, "User not found", http.StatusInternalServerError)
 		}
 
 		err = utils.VerifyPassword(newUser.ConfirmPassword, newUser.Password)
 
 		if err != nil {
-			return models.User{}, utils.ErrorHandler(err, "account exists but password wrong", http.StatusBadRequest)
+			return models.User{}, utils.ErrorHandler(err, "Account already exists, your password is invalid", http.StatusBadRequest)
 		}
 
 		newUser.Password = ""
@@ -66,11 +66,11 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 
 	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE uuid = $1", newUser.Uuid).Scan(&count)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 
 	if count != 0 {
-		return models.User{}, utils.ErrorHandler(fmt.Errorf("username already exists in database"), "username already exists", http.StatusBadRequest)
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("username already exists in database"), "Username already exists", http.StatusBadRequest)
 	}
 
 	otp := randOTP(6)
@@ -89,17 +89,17 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 	).Err()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error uploading data (rdb)", http.StatusInternalServerError)
 	}
 
 	err = rdb.Expire(ctx, key, 7*time.Minute).Err()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error uploading data (rdb)", http.StatusInternalServerError)
 	}
 
 	err = sendOTP(newUser.Email, otp)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error sending otp", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error sending otp", http.StatusInternalServerError)
 	}
 
 	newUser.Password = ""
@@ -117,14 +117,14 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
 	rdb, err := nosql.RedisCliant()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to (rdb)", http.StatusInternalServerError)
 	}
 
 	defer rdb.Close()
@@ -141,7 +141,7 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 
 	// checking otp ---------------------------------------------------------------------------------
 	if otp != realOtp {
-		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "incorrect otp", http.StatusBadRequest)
+		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "Incorrect otp", http.StatusBadRequest)
 	}
 
 	// encoding password-----------------------------------------------------------------------------
@@ -149,12 +149,12 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 
 	_, err = rand.Read(salt)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error making salt", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error making salt", http.StatusInternalServerError)
 	}
 
 	user.Password, err = utils.PassEncoder(user.Password, salt)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error encoding pass", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error encoding pass", http.StatusInternalServerError)
 	}
 
 	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, authentication) VALUES($1, $2, $3, $4, $5)",
@@ -164,20 +164,20 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 	user.Password = ""
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error preparing statement", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error preparing statement", http.StatusInternalServerError)
 	}
 
 	rowsAffected, _ := result.RowsAffected()
 
 	if int(rowsAffected) == 0 {
-		return models.User{}, utils.ErrorHandler(err, "no rows effected", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "No rows effected", http.StatusInternalServerError)
 	}
 
 	err = db.QueryRow("SELECT uuid, role, authentication FROM users WHERE uuid = $1", uuid).Scan(
 		&user.Uuid, &user.Role, &user.Authentication,
 	)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "unable to retrieve data", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Unable to retrieve data", http.StatusInternalServerError)
 	}
 
 	return user, utils.Errorhandler{}
@@ -189,7 +189,7 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -198,7 +198,7 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error updating database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error updating database", http.StatusInternalServerError)
 	}
 
 	var user models.User
@@ -208,7 +208,7 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "user not found", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "User not found", http.StatusInternalServerError)
 	}
 
 	return user, utils.Errorhandler{}
@@ -219,7 +219,7 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, utils.Errorhandle
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -231,14 +231,14 @@ func LoginDBHandlerFunc(email, givenPass string) (models.User, utils.Errorhandle
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.User{}, utils.ErrorHandler(err, "email doesnt exists in database", http.StatusBadRequest)
+			return models.User{}, utils.ErrorHandler(err, "Invalid email or password", http.StatusBadRequest)
 		}
-		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
 	}
 
 	err = utils.VerifyPassword(givenPass, user.Password)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "passwords dont match", http.StatusBadRequest)
+		return models.User{}, utils.ErrorHandler(err, "Invalid email or password", http.StatusBadRequest)
 	}
 
 	user.Password = ""
@@ -251,14 +251,14 @@ func ForgotPasswordDBHandler(email string) (models.User, utils.Errorhandler) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
 	rdb, err := nosql.RedisCliant()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to (rdb)", http.StatusInternalServerError)
 	}
 
 	defer rdb.Close()
@@ -272,7 +272,7 @@ func ForgotPasswordDBHandler(email string) (models.User, utils.Errorhandler) {
 	user.Authentication = "reset"
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
 	}
 
 	otp := randOTP(6)
@@ -282,12 +282,12 @@ func ForgotPasswordDBHandler(email string) (models.User, utils.Errorhandler) {
 	err = rdb.Set(ctx, key, otp, 7*time.Minute).Err()
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error uploading data (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error uploading data (rdb)", http.StatusInternalServerError)
 	}
 
 	err = sendOTP(email, otp)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error sending otp", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error sending otp", http.StatusInternalServerError)
 	}
 
 	return user, utils.Errorhandler{}
@@ -297,14 +297,14 @@ func ResetPassExecDBHandler(uuid, otp, password string) utils.Errorhandler {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
 	rdb, err := nosql.RedisCliant()
 
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to (rdb)", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to (rdb)", http.StatusInternalServerError)
 	}
 
 	defer rdb.Close()
@@ -314,11 +314,11 @@ func ResetPassExecDBHandler(uuid, otp, password string) utils.Errorhandler {
 	realOtp, err := rdb.Get(ctx, key).Result()
 
 	if err != nil {
-		return utils.ErrorHandler(err, "invalid or expired reset code", http.StatusBadRequest)
+		return utils.ErrorHandler(err, "Invalid or expired reset code", http.StatusBadRequest)
 	}
 
 	if realOtp != otp {
-		return utils.ErrorHandler(err, "otp doesnt match", http.StatusBadRequest)
+		return utils.ErrorHandler(err, "Invalid Otp", http.StatusBadRequest)
 	}
 
 	// encoding new password
@@ -326,11 +326,11 @@ func ResetPassExecDBHandler(uuid, otp, password string) utils.Errorhandler {
 
 	_, err = rand.Read(salt)
 	if err != nil {
-		return utils.ErrorHandler(err, "error making salt", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error making salt", http.StatusInternalServerError)
 	}
 	new_pass, err := utils.PassEncoder(password, salt)
 	if err != nil {
-		return utils.ErrorHandler(err, "error encoding password", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error encoding password", http.StatusInternalServerError)
 	}
 
 	_, err = db.Exec(`UPDATE users SET password = $1 WHERE uuid = $2`,
@@ -338,7 +338,7 @@ func ResetPassExecDBHandler(uuid, otp, password string) utils.Errorhandler {
 	)
 
 	if err != nil {
-		return utils.ErrorHandler(err, "error updating password", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating password", http.StatusInternalServerError)
 	}
 
 	return utils.Errorhandler{}
@@ -350,7 +350,7 @@ func UpdateCoordinates(uuid string, coordinates models.Coordinates) utils.Errorh
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -359,7 +359,7 @@ func UpdateCoordinates(uuid string, coordinates models.Coordinates) utils.Errorh
 	)
 
 	if err != nil {
-		return utils.ErrorHandler(err, "error updating coordinates", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating coordinates", http.StatusInternalServerError)
 	}
 
 	return utils.Errorhandler{}
@@ -369,7 +369,7 @@ func ProfileInfoDB(uuid string) (models.User, utils.Errorhandler) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -379,7 +379,7 @@ func ProfileInfoDB(uuid string) (models.User, utils.Errorhandler) {
 		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.Authentication, &user.ProfilePhotoURL)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "error retrieving data from database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
 	}
 
 	return user, utils.Errorhandler{}
@@ -389,7 +389,7 @@ func ProfileInfoDB(uuid string) (models.User, utils.Errorhandler) {
 func UpdateProfilePhotoDB(uuid, photoUrl string) utils.Errorhandler {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -398,7 +398,7 @@ func UpdateProfilePhotoDB(uuid, photoUrl string) utils.Errorhandler {
 	)
 
 	if err != nil {
-		return utils.ErrorHandler(err, "error updating profile photo", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating profile photo", http.StatusInternalServerError)
 	}
 
 	return utils.Errorhandler{}
@@ -409,7 +409,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.Post{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.Post{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -433,7 +433,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 		).Scan(&post.PostUUID, &post.CreatedAt, &post.EventAt)
 
 		if err != nil {
-			return models.Post{}, utils.ErrorHandler(err, "error inserting post", http.StatusInternalServerError)
+			return models.Post{}, utils.ErrorHandler(err, "Error inserting post", http.StatusInternalServerError)
 		}
 
 	} else {
@@ -442,7 +442,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 		).Scan(&post.PostUUID, &post.CreatedAt)
 
 		if err != nil {
-			return models.Post{}, utils.ErrorHandler(err, "error inserting post", http.StatusInternalServerError)
+			return models.Post{}, utils.ErrorHandler(err, "Error inserting post", http.StatusInternalServerError)
 		}
 
 	}
@@ -459,7 +459,7 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -479,7 +479,7 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, utils.Errorhandler{}
 		}
-		return nil, utils.ErrorHandler(err, "error making query", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error making query", http.StatusInternalServerError)
 	}
 	defer rows.Close()
 
@@ -492,18 +492,18 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 		err := rows.Scan(scans...)
 
 		if err != nil {
-			return nil, utils.ErrorHandler(err, "error scanning database", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Error scanning database", http.StatusInternalServerError)
 		}
 
 		err = json.Unmarshal(locJSON, &post.Location)
 		if err != nil {
-			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+string(locJSON)), http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, fmt.Sprint("Error unmarshaling location:"+string(locJSON)), http.StatusInternalServerError)
 		}
 
 		posts = append(posts, post)
 
 		if err := rows.Err(); err != nil {
-			return nil, utils.ErrorHandler(err, "row iteration error", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Row iteration error", http.StatusInternalServerError)
 		}
 
 	}
@@ -514,7 +514,7 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -531,7 +531,7 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, util
 	)
 
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "error making query", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error making query", http.StatusInternalServerError)
 	}
 	defer rows.Close()
 
@@ -547,18 +547,18 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, util
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, utils.Errorhandler{}
 			}
-			return nil, utils.ErrorHandler(err, "error scanning database", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Error scanning database", http.StatusInternalServerError)
 		}
 
 		err = json.Unmarshal(locJSON, &post.Location)
 		if err != nil {
-			return nil, utils.ErrorHandler(err, fmt.Sprint("error unmarshaling location:"+string(locJSON)), http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, fmt.Sprint("Error unmarshaling location:"+string(locJSON)), http.StatusInternalServerError)
 		}
 
 		posts = append(posts, post)
 
 		if err := rows.Err(); err != nil {
-			return nil, utils.ErrorHandler(err, "row iteration error", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Row iteration error", http.StatusInternalServerError)
 		}
 
 	}
@@ -572,7 +572,7 @@ func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -580,16 +580,16 @@ func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {
 
 	res, err := db.Exec(query, token, uuid)
 	if err != nil {
-		return utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return utils.ErrorHandler(err, "error getting affected rows", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error getting affected rows", http.StatusInternalServerError)
 	}
 
 	if rows == 0 {
-		return utils.ErrorHandler(fmt.Errorf("no uuid found"), "no uuid found", http.StatusBadRequest)
+		return utils.ErrorHandler(fmt.Errorf("invalid uuid"), "Invalid uuid", http.StatusBadRequest)
 	}
 
 	return utils.Errorhandler{}
@@ -599,7 +599,7 @@ func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {
 func DonePatchRequestDB(postid string) utils.Errorhandler {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -607,17 +607,17 @@ func DonePatchRequestDB(postid string) utils.Errorhandler {
 
 	res, err := db.Exec(query, postid, true)
 	if err != nil {
-		return utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	// Check if any row was actually updated
 	rows, err := res.RowsAffected()
 	if err != nil {
-		return utils.ErrorHandler(err, "error getting affected rows", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error getting affected rows", http.StatusInternalServerError)
 	}
 
 	if rows == 0 {
-		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "no post found with postid", http.StatusBadRequest)
+		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "No post found with postid", http.StatusBadRequest)
 	}
 
 	return utils.Errorhandler{}
@@ -627,7 +627,7 @@ func DonePatchRequestDB(postid string) utils.Errorhandler {
 func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.InterestResult{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.InterestResult{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -660,9 +660,9 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.InterestResult{}, utils.ErrorHandler(err, "post not found", http.StatusInternalServerError) // surface as 404 in handler
+			return models.InterestResult{}, utils.ErrorHandler(err, "Post not found", http.StatusInternalServerError) // surface as 404 in handler
 		}
-		return models.InterestResult{}, utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return models.InterestResult{}, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	if result.Changed && result.Type == "helpnearby" {
@@ -675,7 +675,7 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.
 func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.InterestResult{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.InterestResult{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -707,9 +707,9 @@ func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, utils.Er
 	err = db.QueryRow(q, postUuid, uuidStr).Scan(&result.Changed, &result.InterestedCount, &result.Type)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.InterestResult{}, utils.ErrorHandler(err, "post not found", http.StatusInternalServerError) // surface as 404 in handler
+			return models.InterestResult{}, utils.ErrorHandler(err, "Post not found", http.StatusInternalServerError) // surface as 404 in handler
 		}
-		return models.InterestResult{}, utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return models.InterestResult{}, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	return result, utils.Errorhandler{}
@@ -720,7 +720,7 @@ func UninterestedPost(uuidStr, postUuid string) (models.InterestResult, utils.Er
 func GetCommentDBHandler(postUuid, uuid string, page int) ([]models.Comment, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return nil, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -742,7 +742,7 @@ func GetCommentDBHandler(postUuid, uuid string, page int) ([]models.Comment, uti
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, utils.Errorhandler{}
 		}
-		return nil, utils.ErrorHandler(err, "error making query", http.StatusInternalServerError)
+		return nil, utils.ErrorHandler(err, "Error making query", http.StatusInternalServerError)
 	}
 	defer rows.Close()
 
@@ -757,13 +757,13 @@ func GetCommentDBHandler(postUuid, uuid string, page int) ([]models.Comment, uti
 			if errors.Is(err, sql.ErrNoRows) {
 				return nil, utils.Errorhandler{}
 			}
-			return nil, utils.ErrorHandler(err, "error scanning database", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Error scanning database", http.StatusInternalServerError)
 		}
 
 		comments = append(comments, comment)
 
 		if err := rows.Err(); err != nil {
-			return nil, utils.ErrorHandler(err, "row iteration error", http.StatusInternalServerError)
+			return nil, utils.ErrorHandler(err, "Row iteration error", http.StatusInternalServerError)
 		}
 
 	}
@@ -775,7 +775,7 @@ func CreateCommentDBHandler(comment models.Comment) (models.Comment, utils.Error
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.Comment{}, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return models.Comment{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -801,9 +801,9 @@ func CreateCommentDBHandler(comment models.Comment) (models.Comment, utils.Error
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return models.Comment{}, utils.ErrorHandler(err, "post not found", http.StatusInternalServerError) // surface as 404 in handler
+			return models.Comment{}, utils.ErrorHandler(err, "Post not found", http.StatusInternalServerError) // surface as 404 in handler
 		}
-		return models.Comment{}, utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return models.Comment{}, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	return comment, utils.Errorhandler{}
@@ -813,7 +813,7 @@ func EditCommentDBHandler(commentUuid, uuid, content string) (bool, utils.Errorh
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return false, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return false, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -832,9 +832,9 @@ func EditCommentDBHandler(commentUuid, uuid, content string) (bool, utils.Errorh
 		Scan(&edited)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, utils.ErrorHandler(err, "comment not found or not owned", http.StatusBadRequest)
+			return false, utils.ErrorHandler(err, "Comment not found or not owned", http.StatusBadRequest)
 		}
-		return false, utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return false, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	return edited, utils.Errorhandler{}
@@ -844,7 +844,7 @@ func DeleteCommentDBHandler(commentUuid, uuid string) (bool, int, utils.Errorhan
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return false, 0, utils.ErrorHandler(err, "error connecting to database", http.StatusInternalServerError)
+		return false, 0, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
@@ -873,9 +873,9 @@ func DeleteCommentDBHandler(commentUuid, uuid string) (bool, int, utils.Errorhan
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return false, 0, utils.ErrorHandler(err, "comment not found", http.StatusInternalServerError) // surface as 404 in handler
+			return false, 0, utils.ErrorHandler(err, "Comment not found", http.StatusInternalServerError) // surface as 404 in handler
 		}
-		return false, 0, utils.ErrorHandler(err, "error updating query", http.StatusInternalServerError)
+		return false, 0, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	return deleted, commentCount, utils.Errorhandler{}
