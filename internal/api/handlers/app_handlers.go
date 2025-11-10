@@ -92,11 +92,13 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		response := struct {
-			Status string      `json:"status"`
-			Data   models.Post `json:"data"`
+			Status  string      `json:"status"`
+			Message string      `json:"message"`
+			Data    models.Post `json:"data"`
 		}{
-			Status: "Success",
-			Data:   newPost,
+			Status:  "Success",
+			Message: "Post created successfully",
+			Data:    newPost,
 		}
 
 		err = json.NewEncoder(w).Encode(response)
@@ -190,19 +192,23 @@ func HandleRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var status string
+	var message string
 
 	if len(posts) == 0 {
-		status = "no posts available"
+		status = "Success"
+		message = "No posts available"
 	} else {
-		status = "success"
+		status = "Success"
 	}
 
 	response := struct {
-		Status string        `json:"status"`
-		Data   []models.Post `json:"data"`
+		Status  string        `json:"status"`
+		Message string        `json:"message,omitempty"`
+		Data    []models.Post `json:"data"`
 	}{
-		Status: status,
-		Data:   posts,
+		Status:  status,
+		Message: message,
+		Data:    posts,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -263,19 +269,23 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var status string
+	var message string
 
 	if len(posts) == 0 {
-		status = "no posts available"
+		status = "Success"
+		message = "No posts available"
 	} else {
-		status = "success"
+		status = "Success"
 	}
 
 	response := struct {
-		Status string        `json:"status"`
-		Data   []models.Post `json:"data"`
+		Status  string        `json:"status"`
+		Message string        `json:"message,omitempty"`
+		Data    []models.Post `json:"data"`
 	}{
-		Status: status,
-		Data:   posts,
+		Status:  status,
+		Message: message,
+		Data:    posts,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -319,9 +329,11 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
+		Message string `json:"message"`
 	}{
-		Status: "success",
+		Status:  "Success",
+		Message: "Token sent successfully",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -351,9 +363,11 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
+		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
+		Message: "Post set Done",
 	}
 
 	err := json.NewEncoder(w).Encode(response)
@@ -548,9 +562,11 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
 		Status  string         `json:"status"`
+		Message string         `json:"message"`
 		Comment models.Comment `json:"comment"`
 	}{
 		Status:  "Success",
+		Message: "Comment created",
 		Comment: comment,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
@@ -606,11 +622,13 @@ func EditCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
-		Status string `json:"status"`
-		Edited bool   `json:"edited"`
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Edited  bool   `json:"edited"`
 	}{
-		Status: "Success",
-		Edited: edited,
+		Status:  "Success",
+		Message: "Comment edited",
+		Edited:  edited,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
@@ -648,10 +666,12 @@ func DeleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status       string `json:"status"`
+		Message      string `json:"message"`
 		Deleted      bool   `json:"deleted"`
 		CommentCount int    `json:"commentCount"`
 	}{
 		Status:       "success",
+		Message:      "Comment deleted",
 		Deleted:      deleted,
 		CommentCount: count,
 	}

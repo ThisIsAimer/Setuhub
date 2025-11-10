@@ -94,8 +94,10 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
+		Message: "Sign up successfull",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -188,8 +190,10 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
+		Message: "Otp sent Successfully",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -270,8 +274,10 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
+		Message: "Authenticated successfully",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -331,10 +337,10 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	response := struct {
 		Status string `json:"status"`
-		Id     string `json:"id"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
-		Id:     user.Uuid,
+		Message: "Logged in successfully",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -364,8 +370,10 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	responce := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
-		Status: "logged out successfully",
+		Status: "Success",
+		Message: "Logges out successfully",
 	}
 
 	err := json.NewEncoder(w).Encode(responce)
@@ -555,8 +563,10 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
+		Message: "Coordinates Updated",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -648,8 +658,10 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
 		Status string `json:"status"`
+		Message string `json:"message"`
 	}{
 		Status: "Success",
+		Message: "Updated profile photo",
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
