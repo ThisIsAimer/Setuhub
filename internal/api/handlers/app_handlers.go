@@ -11,6 +11,41 @@ import (
 	"strings"
 )
 
+func CreatePostButtonHandler(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	name, myErr := databasehandler.CreatePostButtonDbHandle(uuid)
+
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	response := struct {
+		Status string `json:"status"`
+		Uuid   string `json:"id"`
+		Name   string `json:"name"`
+	}{
+		Status: "Success",
+		Uuid:   uuid,
+		Name:   name,
+	}
+
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+}
+
+// create app handler -------------------------------------------------------------------------------------------------------------------------
 func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 

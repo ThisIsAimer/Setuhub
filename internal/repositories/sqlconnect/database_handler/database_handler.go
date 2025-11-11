@@ -455,6 +455,29 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 }
 
+// CreateButtonHandler ----------------------------------------------------------------------------------------------------------------------------------------
+
+func CreatePostButtonDbHandle(uuid string) (string, utils.Errorhandler) {
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return "", utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
+	}
+	defer db.Close()
+
+	var name string
+
+	err = db.QueryRow(`SELECT name FROM users WHERE uuid = $1`, uuid).
+		Scan(&name)
+
+	if err != nil {
+		return "", utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
+	}
+
+	return name, utils.Errorhandler{}
+}
+
+// app handlers -----------------------------------------------------------------------------------------------------------------------------------------------------------
 func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coordinates) ([]models.Post, utils.Errorhandler) {
 
 	db, err := sqlconnect.ConnectDB()

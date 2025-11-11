@@ -52,7 +52,7 @@ func filterQueryParams(r *http.Request, whitelist []string) {
 func filterBodyParams(w http.ResponseWriter, r *http.Request, whitelist []string) {
 	err := r.ParseForm()
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "error is:"+err.Error(), http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "Error is:"+err.Error(), http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
