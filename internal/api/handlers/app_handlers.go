@@ -19,7 +19,7 @@ func CreatePostButtonHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, myErr := databasehandler.CreatePostButtonDbHandle(uuid)
+	user, myErr := databasehandler.CreatePostButtonDbHandle(uuid)
 
 	if myErr.MyError != nil {
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
@@ -27,13 +27,11 @@ func CreatePostButtonHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := struct {
-		Status string `json:"status"`
-		Uuid   string `json:"id"`
-		Name   string `json:"name"`
+		Status string      `json:"status"`
+		Data   models.User `json:"data"`
 	}{
 		Status: "Success",
-		Uuid:   uuid,
-		Name:   name,
+		Data:   user,
 	}
 
 	err := json.NewEncoder(w).Encode(response)

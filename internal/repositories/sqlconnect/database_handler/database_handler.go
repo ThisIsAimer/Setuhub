@@ -457,24 +457,26 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 // CreateButtonHandler ----------------------------------------------------------------------------------------------------------------------------------------
 
-func CreatePostButtonDbHandle(uuid string) (string, utils.Errorhandler) {
+func CreatePostButtonDbHandle(uuid string) (models.User, utils.Errorhandler) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return "", utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
-	var name string
+	var user models.User
 
-	err = db.QueryRow(`SELECT name FROM users WHERE uuid = $1`, uuid).
-		Scan(&name)
+	err = db.QueryRow(`SELECT name, profile_photo_url FROM users WHERE uuid = $1`, uuid).
+		Scan(&user.Name, &user.ProfilePhotoURL)
+
+	user.Uuid = uuid
 
 	if err != nil {
-		return "", utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
 	}
 
-	return name, utils.Errorhandler{}
+	return user, utils.Errorhandler{}
 }
 
 // app handlers -----------------------------------------------------------------------------------------------------------------------------------------------------------
