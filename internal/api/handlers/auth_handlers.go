@@ -49,6 +49,13 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.Contains(newUser.Uuid, " ") {
+		myErr := utils.ErrorHandler(fmt.Errorf("user id cant contain spaces"), "Spaces not allowed in user id", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+
+	}
+
 	err = isValidEmailFormat(newUser.Email)
 
 	if err != nil {
@@ -93,10 +100,10 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Sign up successfull",
 	}
 
@@ -189,10 +196,10 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Otp sent Successfully",
 	}
 
@@ -273,10 +280,10 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Authenticated successfully",
 	}
 
@@ -336,10 +343,10 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Logged in successfully",
 	}
 
@@ -369,10 +376,10 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	responce := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Logges out successfully",
 	}
 
@@ -434,10 +441,10 @@ func ForgotPassHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: fmt.Sprintf("Otp sent to email : %s", req.Email),
 	}
 
@@ -504,10 +511,10 @@ func ResetPassHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Password updated successfully, go login with the new password",
 	}
 
@@ -562,10 +569,10 @@ func UpdateCoordinatesHandlerFunc(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Coordinates Updated",
 	}
 
@@ -657,10 +664,10 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	response := struct {
-		Status string `json:"status"`
+		Status  string `json:"status"`
 		Message string `json:"message"`
 	}{
-		Status: "Success",
+		Status:  "Success",
 		Message: "Updated profile photo",
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
