@@ -375,8 +375,8 @@ func ProfileInfoDB(uuid string) (models.User, utils.Errorhandler) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, authentication, profilePhotoUrl FROM users WHERE uuid = $1", uuid).
-		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.Authentication, &user.ProfilePhotoURL)
+	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, profilePhotoUrl FROM users WHERE uuid = $1", uuid).
+		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.ProfilePhotoURL)
 
 	if err != nil {
 		return models.User{}, utils.ErrorHandler(err, "Error retrieving data from database", http.StatusInternalServerError)
@@ -395,6 +395,24 @@ func UpdateProfilePhotoDB(uuid, photoUrl string) utils.Errorhandler {
 
 	_, err = db.Exec(`UPDATE users SET profile_photo_url = $1 WHERE uuid = $2;`,
 		photoUrl, uuid,
+	)
+
+	if err != nil {
+		return utils.ErrorHandler(err, "Error updating profile photo", http.StatusInternalServerError)
+	}
+
+	return utils.Errorhandler{}
+}
+
+func UpdatePhoneNumberDB(uuid, phoneNumber string) utils.Errorhandler {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
+	}
+	defer db.Close()
+
+	_, err = db.Exec(`UPDATE users SET phone = $1 WHERE uuid = $2;`,
+		phoneNumber, uuid,
 	)
 
 	if err != nil {

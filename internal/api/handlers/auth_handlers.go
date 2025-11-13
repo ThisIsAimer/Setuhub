@@ -622,10 +622,6 @@ func ViewProfile(w http.ResponseWriter, r *http.Request) {
 
 // update profile pic -------------------------------------------------------------------------------------
 func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost && r.Method != http.MethodPatch {
-		utils.WriteJSONError(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
 
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok || uuid == "" {
@@ -676,3 +672,58 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
+
+
+func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
+	
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok || uuid == "" {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	var request struct {
+		Number string `json:"number"`
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	defer r.Body.Close()
+	decoder.DisallowUnknownFields()
+
+	err := decoder.Decode(&request)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Invalid json body", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	request.Number = strings.TrimSpace(request.Number)
+	if request.Number == "" {
+		myErr := utils.ErrorHandler(fmt.Errorf("profilePhotoUrl is required"), "ProfilePhotoUrl is required", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	myErr := databasehandler.UpdateProfilePhotoDB(uuid, request.Number)
+
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}{
+		Status:  "Success",
+		Message: "Updated phone number successfully",
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+}
+
+

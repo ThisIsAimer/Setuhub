@@ -22,7 +22,8 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("POST /login/forgotpassword/otp", handlers.ResetPassHandler)
 
 	mux.HandleFunc("GET /profile", handlers.ViewProfile)
-	mux.HandleFunc("POST /profile/photo", handlers.UpdateProfilePhoto)
+	mux.HandleFunc("PATCH /update/photo", handlers.UpdateProfilePhoto)
+	mux.HandleFunc("PATCH /update/phonenumber", handlers.UpdatePhoneNumber)
 
 	// get location---------------------------------------------------------------------------------
 	mux.HandleFunc("POST /coordinates", handlers.UpdateCoordinatesHandlerFunc)
