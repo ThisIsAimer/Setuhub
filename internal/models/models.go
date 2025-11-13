@@ -9,7 +9,6 @@ type User struct {
 	Email           string `json:"email,omitempty" db:"email,omitempty"`
 	Password        string `json:"password,omitempty" db:"password,omitempty"`
 	ConfirmPassword string `json:"confirmPassword,omitempty" db:"confirm_password,omitempty"`
-	PhoneNumber     string `json:"phoneNumber,omitempty" db:"phone_number,omitempty"`
 	Role            string `json:"role,omitempty" db:"role,omitempty"`
 	Authentication  string `json:"authentication,omitempty" db:"authentication,omitempty"`
 

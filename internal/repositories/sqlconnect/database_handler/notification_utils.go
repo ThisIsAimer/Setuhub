@@ -20,7 +20,7 @@ import (
 func newFCM() (*messaging.Client, error) {
 	ctx := context.Background()
 	// Either rely on GOOGLE_APPLICATION_CREDENTIALS or pass the file:
-	credPath := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	credPath := os.Getenv("GOOGLE_SERVICE_CREDENTIALS")
 	if credPath == "" {
 		// fallback for local dev if env missing
 		credPath = "cmd/api/google-services.json"
