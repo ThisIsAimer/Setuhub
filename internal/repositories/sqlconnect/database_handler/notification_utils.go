@@ -181,6 +181,11 @@ func sendNotifications(post models.Post, noti chan string) {
 
 	}
 
+	if len(tokens) == 0 {
+		noti <- "No people in area to notify"
+		return
+	}
+
 	fcmConn, err := newFCM()
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "unable to notify", 0)
