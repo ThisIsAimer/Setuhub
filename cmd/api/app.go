@@ -10,18 +10,18 @@ import (
 	"hackathon/internal/api/router"
 	"hackathon/pkg/utils"
 
-	"github.com/joho/godotenv"
+	_ "github.com/joho/godotenv"
 )
 
 func main() {
 
 	var err error
 
-	err = godotenv.Load(`cmd\api\.env`)
-	if err != nil {
-		fmt.Println("Failed to load env")
-		return
-	}
+	// err = godotenv.Load(`cmd\api\.env`)
+	// if err != nil {
+	// 	fmt.Println("Failed to load env")
+	// 	return
+	// }
 
 	port := os.Getenv("PORT")
 	if port == "" {

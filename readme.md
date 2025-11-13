@@ -77,7 +77,7 @@ It’s not just another app — it’s a **Setu (bridge)** that connects people 
 | **Cache** | Redis |
 | **Notifications** | Firebase Cloud Messaging |
 | **Location Services** | Expo Location API, Google Maps Api|
-| **Extra Credits** |Lottie React Native (Animations)|
+| **Extra Credits** |Lottie React Native (Animations), Twilio Sendgrid (Email Management)|
 > Together, this stack makes SetuHub **scalable, fast, and reliable.**
 
 ---
