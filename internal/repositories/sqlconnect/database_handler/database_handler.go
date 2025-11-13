@@ -375,7 +375,7 @@ func ProfileInfoDB(uuid string) (models.User, utils.Errorhandler) {
 
 	var user models.User
 
-	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, profilePhotoUrl FROM users WHERE uuid = $1", uuid).
+	err = db.QueryRow("SELECT uuid, name, phone, gender, address, date_of_birth, profile_photo_url FROM users WHERE uuid = $1", uuid).
 		Scan(&user.Uuid, &user.Name, &user.Phone, &user.Gender, &user.Address, &user.DateOfBirth, &user.ProfilePhotoURL)
 
 	if err != nil {

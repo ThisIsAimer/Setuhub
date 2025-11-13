@@ -63,9 +63,6 @@ func sendToOne(ctx context.Context, client *messaging.Client, token string) erro
 }
 
 func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, post models.Post) (string, error) {
-	if len(tokens) == 0 {
-		return fmt.Sprintln("people in area to be notified provided"), nil
-	}
 
 	message := &messaging.MulticastMessage{
 		Tokens: tokens,
