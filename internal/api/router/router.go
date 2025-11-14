@@ -10,7 +10,7 @@ func Router() *http.ServeMux {
 
 	//test----------------------------------------------------------------------------------------
 	mux.HandleFunc("GET /home", handlers.Home)
-	mux.HandleFunc("GET /jwtcheck", handlers.CheckJwt)
+	mux.HandleFunc("GET /pagerouter", handlers.PageRouter)
 	// auth crud-----------------------------------------------------------------------------------
 	mux.HandleFunc("POST /signup", handlers.SignUpHandlerfunc)
 	mux.HandleFunc("POST /signup/otp", handlers.SignUpOtpfunc)

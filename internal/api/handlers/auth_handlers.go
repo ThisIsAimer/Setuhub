@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -725,41 +726,21 @@ func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func CheckJwt(w http.ResponseWriter, r *http.Request) {
-	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
-	if !ok || uuid == "" {
-		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
-		return
-	}
-	role, ok := r.Context().Value(utils.JwtKey("role")).(string)
-	if !ok || role == "" {
-		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
-		return
-	}
-	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
-	if !ok || auth == "" {
-		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
-		return
-	}
+func PageRouter(w http.ResponseWriter, r *http.Request) {
+	var devEnv = r.Header.Get("X-App-Environment")
 
-	w.Header().Set("Content-Type", "application/json")
-	response := struct {
-		Status  string `json:"status"`
-		Message string `json:"message"`
-		Id      string `json:"id"`
-		Role    string `json:"role"`
-		Auth    string `json:"auth"`
-	}{
-		Status:  "Success",
-		Message: "Jwt token is valid",
-		Id:      uuid,
-		Role:    role,
-		Auth:    auth,
-	}
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+	var targetUrl string
+
+	switch devEnv {
+	case "dev":
+		targetUrl = "setuhub://moments"
+	case "prod":
+		targetUrl = "https://setuhub.io/moments"
+	default:
+		myErr := utils.ErrorHandler(errors.New("invalid X-App-Environmentt"), "Invalid Environment details", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
 
+	http.Redirect(w, r, targetUrl, http.StatusFound)
 }
