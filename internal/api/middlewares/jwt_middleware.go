@@ -16,8 +16,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			myErr := utils.ErrorHandler(err, "Unauthorised", http.StatusBadRequest)
-			utils.WriteJSONError(w, myErr.MyError.Error(), http.StatusBadRequest)
+			target := "https://setuhub.io/"
+			http.Redirect(w, r, target, http.StatusMovedPermanently)
 			return
 		}
 
@@ -30,12 +30,13 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				myErr := utils.ErrorHandler(err, "Token expired", http.StatusUnauthorized)
-				utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+				target := "https://setuhub.io/"
+				http.Redirect(w, r, target, http.StatusMovedPermanently)
 				return
 			}
-			myErr := utils.ErrorHandler(err, "Unauthorised access", http.StatusUnauthorized)
-			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			
+			target := "https://setuhub.io/"
+			http.Redirect(w, r, target, http.StatusMovedPermanently)
 			return
 		}
 
