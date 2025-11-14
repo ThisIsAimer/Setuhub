@@ -41,8 +41,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		}
 
 		if !parsedToken.Valid {
-			myErr := utils.ErrorHandler(errors.New("invalid token"+token.Value), "Invalid token", http.StatusUnauthorized)
-			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			target := "setuhub://"
+			http.Redirect(w, r, target,  http.StatusFound)
 			return
 		}
 
