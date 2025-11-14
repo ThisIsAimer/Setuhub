@@ -13,11 +13,23 @@ import (
 func JwtMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		var targetUrl string
+
+		var devEnv = r.Header.Get("X-App-Environment")
+
+		switch devEnv {
+		case "dev":
+			targetUrl = "setuhub://"
+		case "prod":
+			targetUrl = "https://setuhub.io/"
+
+		}
+
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			target := "setuhub://"
-			http.Redirect(w, r, target,  http.StatusFound)
+			http.Redirect(w, r, targetUrl, http.StatusFound)
 			return
 		}
 
@@ -30,19 +42,15 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				target := "setuhub://"
-				http.Redirect(w, r, target,  http.StatusFound)
+				http.Redirect(w, r, targetUrl, http.StatusFound)
 				return
 			}
-			
-			target := "setuhub://"
-			http.Redirect(w, r, target,  http.StatusFound)
+			http.Redirect(w, r, targetUrl, http.StatusFound)
 			return
 		}
 
 		if !parsedToken.Valid {
-			target := "setuhub://"
-			http.Redirect(w, r, target,  http.StatusFound)
+			http.Redirect(w, r, targetUrl, http.StatusFound)
 			return
 		}
 
