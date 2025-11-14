@@ -1,6 +1,8 @@
 package middlewares
 
 import (
+	"errors"
+	"hackathon/pkg/utils"
 	"net/http"
 	"os"
 )
@@ -24,10 +26,17 @@ func Cors(next http.Handler) http.Handler {
 		}
 
 		RealappSecret := os.Getenv("APP_SECRET")
+
+		if RealappSecret == "" {
+			myErr := utils.ErrorHandler(errors.New("no app secret found in env"), "no app secret found", http.StatusInternalServerError)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			return
+		}
+
 		appSecret := r.Header.Get("X-App-Secret")
 
 		if RealappSecret != appSecret {
-			http.Redirect(w, r, "https://www.youtube.com/watch?v=xvFZjo5PgG0", http.StatusFound)
+			http.Redirect(w, r, "https://www.youtube.com/shorts/g-AyBC88tgw", http.StatusFound)
 			return
 		}
 

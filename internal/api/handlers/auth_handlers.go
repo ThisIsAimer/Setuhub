@@ -102,11 +102,9 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
-		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Sign up successfull",
-		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -200,11 +198,9 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
-		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Otp sent Successfully",
-		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -286,11 +282,9 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
-		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Authenticated successfully",
-		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -351,11 +345,9 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
-		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Logged in successfully",
-		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -731,4 +723,43 @@ func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
+}
+
+func CheckJwt(w http.ResponseWriter, r *http.Request) {
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+	if !ok || uuid == "" {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+	role, ok := r.Context().Value(utils.JwtKey("role")).(string)
+	if !ok || role == "" {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
+	if !ok || auth == "" {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	response := struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Id      string `json:"id"`
+		Role    string `json:"role"`
+		Auth    string `json:"auth"`
+	}{
+		Status:  "Success",
+		Message: "Jwt token is valid",
+		Id:      uuid,
+		Role:    role,
+		Auth:    auth,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
 }
