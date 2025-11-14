@@ -102,9 +102,11 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
+		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Sign up successfull",
+		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -198,9 +200,11 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
+		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Otp sent Successfully",
+		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -282,9 +286,11 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
+		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Authenticated successfully",
+		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -345,9 +351,11 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string `json:"status"`
 		Message string `json:"message"`
+		Token   string `json:"token"`
 	}{
 		Status:  "Success",
 		Message: "Logged in successfully",
+		Token:   tokenString,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -673,9 +681,8 @@ func UpdateProfilePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-
 func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	
+
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 	if !ok || uuid == "" {
 		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
@@ -725,5 +732,3 @@ func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 }
-
-
