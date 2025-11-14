@@ -16,8 +16,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			target := "https://setuhub.io/"
-			http.Redirect(w, r, target, http.StatusMovedPermanently)
+			target := "setuhub://"
+			http.Redirect(w, r, target,  http.StatusFound)
 			return
 		}
 
@@ -30,13 +30,13 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				target := "https://setuhub.io/"
-				http.Redirect(w, r, target, http.StatusMovedPermanently)
+				target := "setuhub://"
+				http.Redirect(w, r, target,  http.StatusFound)
 				return
 			}
 			
-			target := "https://setuhub.io/"
-			http.Redirect(w, r, target, http.StatusMovedPermanently)
+			target := "setuhub://"
+			http.Redirect(w, r, target,  http.StatusFound)
 			return
 		}
 
