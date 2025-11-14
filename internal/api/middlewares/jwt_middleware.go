@@ -24,6 +24,11 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		case "prod":
 			targetUrl = "https://setuhub.io/"
 
+		default:
+			myErr := utils.ErrorHandler(errors.New("invalid X-App-Environmentt"), "Invalid Environment details", http.StatusBadRequest)
+			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			return
+
 		}
 
 		//fmt.Println(r.Cookies())

@@ -1,11 +1,8 @@
 package middlewares
 
 import (
-	"fmt"
-	"hackathon/pkg/utils"
 	"net/http"
 	"os"
-
 )
 
 // cross-origine resource sharing
@@ -30,8 +27,7 @@ func Cors(next http.Handler) http.Handler {
 		appSecret := r.Header.Get("X-App-Secret")
 
 		if RealappSecret != appSecret {
-			myErr := utils.ErrorHandler(fmt.Errorf(`wrong app Secret: "%s"`, appSecret), "Not allowed by cors", http.StatusBadRequest)
-			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+			http.Redirect(w, r, "https://www.youtube.com/watch?v=xvFZjo5PgG0", http.StatusFound)
 			return
 		}
 
