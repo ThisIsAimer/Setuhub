@@ -8,7 +8,6 @@ import (
 	"hackathon/pkg/utils"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
@@ -35,23 +34,7 @@ func newFCM() (*messaging.Client, error) {
 
 // sending tokens --------------------------------------------------------------------------------------------------------------------------------------------------
 
-func sendToOne(ctx context.Context, client *messaging.Client, token string) error {
-
-	if strings.TrimSpace(token) == "" {
-		return fmt.Errorf("empty FCM token")
-	}
-
-	message := &messaging.Message{
-		Token: token, // single device token string
-		Notification: &messaging.Notification{
-			Title: "someone has shown interest in your request!",
-			Body:  "A user on the way",
-		},
-		Data: map[string]string{
-			"link": "https://yourapp.com/",
-			"type": "information",
-		},
-	}
+func sendToOne(ctx context.Context, client *messaging.Client, message *messaging.Message) error {
 
 	response, err := client.Send(ctx, message)
 	if err != nil {
@@ -108,7 +91,7 @@ func sendToMany(ctx context.Context, client *messaging.Client, tokens []string, 
 }
 
 // sending notis--------------------------------------------------------------------------------------------------------------------------------------------------
-func sendNotification(uuid string) {
+func sendNotification(uuid, notiType string) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		log.Println(err, "unable to notify")
@@ -126,6 +109,27 @@ func sendNotification(uuid string) {
 		return
 	}
 
+	var message *messaging.Message
+
+	if notiType == "helpnearby" {
+		message = &messaging.Message{
+			Token: firebaseToken, // single device token string
+			Notification: &messaging.Notification{
+				Title: "someone has shown interest in your request!",
+				Body:  "A user on the way",
+			},
+		}
+	} else {
+		message = &messaging.Message{
+			Token: firebaseToken, // single device token string
+			Notification: &messaging.Notification{
+				Title: "someone has shown interest in your " + notiType + "!",
+				Body:  "A user found your " + notiType + " intresting!",
+			},
+		}
+
+	}
+
 	fcmConn, err := newFCM()
 	if err != nil {
 		log.Println(err, "unable to notify")
@@ -134,13 +138,11 @@ func sendNotification(uuid string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-
-	err = sendToOne(ctx, fcmConn, firebaseToken)
+	err = sendToOne(ctx, fcmConn, message)
 	if err != nil {
 		log.Println(err, "unable to notify")
 		return
 	}
-
 
 }
 func sendNotifications(post models.Post, noti chan string) {

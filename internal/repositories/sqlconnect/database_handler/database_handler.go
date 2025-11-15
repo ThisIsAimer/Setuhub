@@ -711,7 +711,7 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.
 	fmt.Println(result.InterestedCount, result.Type, result.Uuid)
 
 	if result.Changed && result.Type != "moments" {
-		go sendNotification(result.Uuid)
+		go sendNotification(result.Uuid, result.Type)
 	}
 
 	return result, utils.Errorhandler{}
