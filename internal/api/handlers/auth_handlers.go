@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -737,7 +736,7 @@ func PageRouter(w http.ResponseWriter, r *http.Request) {
 	case "prod":
 		targetUrl = "https://setuhub.io/moments"
 	default:
-		myErr := utils.ErrorHandler(errors.New("invalid X-App-Environmentt"), "Invalid Environment details", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environmentt:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}

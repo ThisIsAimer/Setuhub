@@ -136,8 +136,11 @@ func sendNotification(uuid string) {
 
 	err = sendToOne(ctx, fcmConn, firebaseToken)
 	if err != nil {
+		log.Println(err, "unable to notify")
 		return
 	}
+
+	fmt.Println("notification sent successfully")
 
 }
 func sendNotifications(post models.Post, noti chan string) {
@@ -204,5 +207,6 @@ func sendNotifications(post models.Post, noti chan string) {
 	}
 
 	noti <- notified
+	fmt.Println("notifications sent successfully")
 
 }
