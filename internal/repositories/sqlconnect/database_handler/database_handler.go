@@ -688,18 +688,19 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.
   	  SET interested_count = interested_count + 1
   	  WHERE post_uuid = $1::uuid
     	AND EXISTS (SELECT 1 FROM ins)
-  	  RETURNING interested_count, type
+  	  RETURNING interested_count, type, uuid
 	)
 	SELECT
   		EXISTS(SELECT 1 FROM ins) AS changed,
   		COALESCE(u.interested_count, p.interested_count) AS interested_count,
-  		p.type
+  		p.type,
+		p.uuid
 	  FROM posts p
 	  LEFT JOIN upd u ON TRUE
 	  WHERE p.post_uuid = $1::uuid;
 	`
 
-	err = db.QueryRow(query, postUuid, uuid).Scan(&result.Changed, &result.InterestedCount, &result.Type)
+	err = db.QueryRow(query, postUuid, uuid).Scan(&result.Changed, &result.InterestedCount, &result.Type, &result.Uuid)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -707,9 +708,10 @@ func InterestedPostHandler(uuid, postUuid string) (models.InterestResult, utils.
 		}
 		return models.InterestResult{}, utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
+	fmt.Println(result.InterestedCount, result.Type, result.Uuid)
 
-	if result.Changed && result.Type == "helpnearby" {
-		go sendNotification(uuid)
+	if result.Changed && result.Type != "moments" {
+		go sendNotification(result.Uuid)
 	}
 
 	return result, utils.Errorhandler{}

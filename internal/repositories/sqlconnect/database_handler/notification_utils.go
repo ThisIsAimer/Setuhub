@@ -131,8 +131,9 @@ func sendNotification(uuid string) {
 		log.Println(err, "unable to notify")
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
+
 
 	err = sendToOne(ctx, fcmConn, firebaseToken)
 	if err != nil {
@@ -140,7 +141,6 @@ func sendNotification(uuid string) {
 		return
 	}
 
-	fmt.Println("notification sent successfully")
 
 }
 func sendNotifications(post models.Post, noti chan string) {
@@ -196,7 +196,7 @@ func sendNotifications(post models.Post, noti chan string) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	notified, err := sendToMany(ctx, fcmConn, tokens, post)
@@ -207,6 +207,5 @@ func sendNotifications(post models.Post, noti chan string) {
 	}
 
 	noti <- notified
-	fmt.Println("notifications sent successfully")
 
 }

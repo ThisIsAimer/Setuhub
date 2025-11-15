@@ -93,6 +93,7 @@ type LocationObj struct {
 }
 
 type InterestResult struct {
+	Uuid            string
 	Changed         bool
 	InterestedCount int
 	Type            string
