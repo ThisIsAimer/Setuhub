@@ -100,11 +100,13 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status  string `json:"status"`
-		Message string `json:"message"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		AuthStatus string `json:"authStatus"`
 	}{
-		Status:  "Success",
-		Message: "Sign up successfull",
+		Status:     "Success",
+		Message:    "Signing you up",
+		AuthStatus: newUser.Authentication,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -141,7 +143,7 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 	if auth != "unverified" {
 
-		if auth == "mail" {
+		if auth == "mail_verified" {
 			utils.WriteJSONError(w, "Mail already verified", http.StatusBadRequest)
 			return
 		}
@@ -196,11 +198,13 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status  string `json:"status"`
-		Message string `json:"message"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		AuthStatus string `json:"authStatus"`
 	}{
-		Status:  "Success",
-		Message: "Otp sent Successfully",
+		Status:     "Success",
+		Message:    "Mail has been verified",
+		AuthStatus: user.Authentication,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -343,11 +347,13 @@ func LoginHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	response := struct {
-		Status  string `json:"status"`
-		Message string `json:"message"`
+		Status     string `json:"status"`
+		Message    string `json:"message"`
+		AuthStatus string `json:"authStatus"`
 	}{
-		Status:  "Success",
-		Message: "Logged in successfully",
+		Status:     "Success",
+		Message:    "Logged in successfully",
+		AuthStatus: user.Authentication,
 	}
 
 	err = json.NewEncoder(w).Encode(response)

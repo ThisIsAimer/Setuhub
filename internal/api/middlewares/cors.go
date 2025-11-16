@@ -36,7 +36,7 @@ func Cors(next http.Handler) http.Handler {
 		appSecret := r.Header.Get("X-App-Secret")
 
 		if RealappSecret != appSecret {
-			http.Redirect(w, r, "https://www.youtube.com/shorts/g-AyBC88tgw", http.StatusFound)
+			http.Redirect(w, r, "https://www.youtube.com/watch?v=RkYveCbXPVI", http.StatusFound)
 			return
 		}
 
