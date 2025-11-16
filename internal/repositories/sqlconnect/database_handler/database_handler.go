@@ -158,7 +158,7 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 	}
 
 	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, authentication) VALUES($1, $2, $3, $4, $5)",
-		uuid, user.Email, user.Password, role, "mail_verefied",
+		uuid, user.Email, user.Password, role, "mail_verified",
 	)
 
 	user.Password = ""

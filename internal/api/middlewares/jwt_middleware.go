@@ -87,7 +87,7 @@ func JwtMiddleware(next http.Handler) http.Handler {
 				return
 			}
 
-		case "mail_verefied":
+		case "mail_verified":
 			if path != "/authenticate" {
 				unauthorized("Email verified but not authenticated")
 				return
