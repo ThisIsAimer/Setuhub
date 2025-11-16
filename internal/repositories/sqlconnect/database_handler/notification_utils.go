@@ -145,7 +145,7 @@ func sendNotification(uuid, notiType string) {
 	}
 
 }
-func sendNotifications(post models.Post, noti chan string) {
+func sendNotifications(post models.Post, myUuid string, noti chan string) {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
@@ -155,10 +155,10 @@ func sendNotifications(post models.Post, noti chan string) {
 	}
 	defer db.Close()
 
-	query := `SELECT firebase_token FROM users WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3);`
+	query := `SELECT firebase_token FROM users WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3) AND uuid != $4;`
 
 	rows, err := db.Query(query,
-		post.Longitude, post.Latitude, post.Radius,
+		post.Longitude, post.Latitude, post.Radius, myUuid,
 	)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "unable to notify", 0)

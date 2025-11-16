@@ -447,7 +447,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 	}
 
 	if section != "moments" {
-		go sendNotifications(post, noti)
+		go sendNotifications(post, uuid, noti)
 	}
 
 	return post, utils.Errorhandler{}

@@ -109,10 +109,12 @@ func HandleRequestCreate(w http.ResponseWriter, r *http.Request) {
 		response := struct {
 			Status             string      `json:"status"`
 			Data               models.Post `json:"data"`
+			Message            string      `json:"message"`
 			NotificationStatus string      `json:"notificationStatus"`
 		}{
 			Status:             "Success",
 			Data:               newPost,
+			Message:            "Post created successfully",
 			NotificationStatus: <-noti,
 		}
 
