@@ -12,6 +12,7 @@ import (
 )
 
 func CreatePostButtonHandler(w http.ResponseWriter, r *http.Request) {
+
 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
 
 	if !ok {

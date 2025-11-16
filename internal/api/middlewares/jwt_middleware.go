@@ -26,7 +26,7 @@ func JwtMiddleware(next http.Handler) http.Handler {
 			targetUrl = "https://setuhub.io/"
 
 		default:
-			myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environmentt:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
+			myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environment:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
 			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 			return
 
