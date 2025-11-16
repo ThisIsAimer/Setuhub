@@ -736,7 +736,8 @@ func PageRouter(w http.ResponseWriter, r *http.Request) {
 	case "dev":
 		targetUrl = "setuhub://moments"
 	case "prod":
-		targetUrl = "https://setuhub.io/moments"
+		// targetUrl = "https://setuhub.io/moments"
+		targetUrl = "setuhub://moments"
 	default:
 		myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environment:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)

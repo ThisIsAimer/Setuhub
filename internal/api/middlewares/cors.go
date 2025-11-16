@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"errors"
-	"fmt"
 	"hackathon/pkg/utils"
 	"net/http"
 	"os"
@@ -25,8 +24,6 @@ func Cors(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-
-		fmt.Println("origin:", r.Header.Get("Origin"))
 
 		RealappSecret := os.Getenv("APP_SECRET")
 

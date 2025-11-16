@@ -23,7 +23,8 @@ func JwtMiddleware(next http.Handler) http.Handler {
 		case "dev":
 			targetUrl = "setuhub://"
 		case "prod":
-			targetUrl = "https://setuhub.io/"
+			//targetUrl = "https://setuhub.io/"
+			targetUrl = "setuhub://"
 
 		default:
 			myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environment:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
