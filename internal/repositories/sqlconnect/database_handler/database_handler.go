@@ -42,26 +42,7 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 	}
 
 	if count != 0 {
-
-		err = db.QueryRow("SELECT uuid, email, password, role, authentication FROM users WHERE email = $1", newUser.Email).Scan(
-			&newUser.Uuid, &newUser.Email, &newUser.Password, &newUser.Role, &newUser.Authentication,
-		)
-
-		if err != nil {
-			return models.User{}, utils.ErrorHandler(err, "User not found", http.StatusInternalServerError)
-		}
-
-		err = utils.VerifyPassword(newUser.ConfirmPassword, newUser.Password)
-
-		if err != nil {
-			return models.User{}, utils.ErrorHandler(err, "Account already exists, your password is invalid", http.StatusBadRequest)
-		}
-
-		newUser.Password = ""
-		newUser.ConfirmPassword = ""
-
-		return newUser, utils.Errorhandler{}
-
+		return models.User{}, utils.ErrorHandler(err, "Account already exists", http.StatusBadRequest)
 	}
 
 	err = db.QueryRow("SELECT COUNT(*) FROM users WHERE uuid = $1", newUser.Uuid).Scan(&count)

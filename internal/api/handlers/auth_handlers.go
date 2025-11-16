@@ -102,11 +102,9 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status     string `json:"status"`
 		Message    string `json:"message"`
-		AuthStatus string `json:"authStatus"`
 	}{
 		Status:     "Success",
 		Message:    "Signing you up",
-		AuthStatus: newUser.Authentication,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -200,11 +198,9 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status     string `json:"status"`
 		Message    string `json:"message"`
-		AuthStatus string `json:"authStatus"`
 	}{
 		Status:     "Success",
 		Message:    "Mail has been verified",
-		AuthStatus: user.Authentication,
 	}
 
 	err = json.NewEncoder(w).Encode(response)
@@ -252,7 +248,7 @@ func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 	err = checkEmptyField(userInfo)
 
 	if err != nil {
-		myErr := utils.ErrorHandler(err, "One or user info fields empty", http.StatusBadRequest)
+		myErr := utils.ErrorHandler(err, "One or more user info fields empty", http.StatusBadRequest)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
 	}
