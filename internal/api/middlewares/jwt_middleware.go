@@ -3,7 +3,6 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"fmt"
 	"hackathon/pkg/utils"
 	"net/http"
 	"os"
@@ -15,28 +14,10 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		var targetUrl string
-
-		var devEnv = r.Header.Get("X-App-Environment")
-
-		switch devEnv {
-		case "dev":
-			targetUrl = "setuhub://"
-		case "prod":
-			//targetUrl = "https://setuhub.io/"
-			targetUrl = "setuhub://"
-
-		default:
-			myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environment:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
-			utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-			return
-
-		}
-
 		//fmt.Println(r.Cookies())
 		token, err := r.Cookie("Bearer")
 		if err != nil {
-			http.Redirect(w, r, targetUrl, http.StatusFound)
+			http.Redirect(w, r, "setuhub://", http.StatusFound)
 			return
 		}
 
@@ -49,15 +30,15 @@ func JwtMiddleware(next http.Handler) http.Handler {
 
 		if err != nil {
 			if errors.Is(err, jwt.ErrTokenExpired) {
-				http.Redirect(w, r, targetUrl, http.StatusFound)
+				http.Redirect(w, r, "setuhub://", http.StatusFound)
 				return
 			}
-			http.Redirect(w, r, targetUrl, http.StatusFound)
+			http.Redirect(w, r, "setuhub://", http.StatusFound)
 			return
 		}
 
 		if !parsedToken.Valid {
-			http.Redirect(w, r, targetUrl, http.StatusFound)
+			http.Redirect(w, r, "setuhub://", http.StatusFound)
 			return
 		}
 

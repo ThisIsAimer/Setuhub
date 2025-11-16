@@ -728,21 +728,5 @@ func UpdatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func PageRouter(w http.ResponseWriter, r *http.Request) {
-	var devEnv = r.Header.Get("X-App-Environment")
-
-	var targetUrl string
-
-	switch devEnv {
-	case "dev":
-		targetUrl = "setuhub://moments"
-	case "prod":
-		// targetUrl = "https://setuhub.io/moments"
-		targetUrl = "setuhub://moments"
-	default:
-		myErr := utils.ErrorHandler(fmt.Errorf(`invalid X-App-Environment:"%s"`, devEnv), "Invalid Environment details", http.StatusBadRequest)
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
-
-	http.Redirect(w, r, targetUrl, http.StatusFound)
+	http.Redirect(w, r, "setuhub://moments", http.StatusFound)
 }
