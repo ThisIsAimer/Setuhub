@@ -535,7 +535,7 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 	return posts, utils.Errorhandler{}
 }
 
-func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, utils.Errorhandler) {
+func RetrieveMyRequestGetDB(uuid string, page int) ([]models.Post, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
@@ -544,9 +544,9 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, util
 
 	posts := make([]models.Post, 0)
 
-	query := getGetMyQuery(section)
+	query := getGetMyQuery()
 
-	args := getGetMyArgs(uuid, section, page)
+	args := getGetMyArgs(uuid, page)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -563,7 +563,7 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, util
 		var post models.Post
 		var locJSON []byte
 
-		scans := getGetMyScan(section, &post, &locJSON)
+		scans := getGetMyScan(&post, &locJSON)
 
 		err := rows.Scan(scans...)
 

@@ -167,46 +167,49 @@ func getGetAppScan(section string, post *models.Post, locJSON *[]byte) []any {
 	return args[section]
 }
 
-func getGetMyQuery(section string) string {
-	query := make(map[string]string, 0)
-
-	query["helpnearby"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND p.uuid = $2 ORDER BY p.created_at DESC LIMIT $3 OFFSET $4;"
-	query["impactevents"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.event_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND p.uuid = $2 ORDER BY p.created_at DESC LIMIT $3 OFFSET $4;"
-	query["moments"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND p.uuid = $2 ORDER BY p.created_at DESC LIMIT $3 OFFSET $4;"
-	query["missingpeople"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.media, p.gender, p.age, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND p.uuid = $2 ORDER BY p.created_at DESC LIMIT $3 OFFSET $4;"
-	query["bloodemergency"] = "SELECT p.post_uuid, p.uuid, p.title, p.description, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $2::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.type = $1 AND p.uuid = $2 ORDER BY p.created_at DESC LIMIT $3 OFFSET $4;"
-
-	return query[section]
+func getGetMyQuery() string {
+	return `SELECT p.post_uuid, p.uuid, p.title, p.description, p.type, p.media, p.gender, p.age, p.blood_group, ST_X(p.coordinates::geometry) AS longitude, ST_Y(p.coordinates::geometry) AS latitude, p.created_at, p.event_at, p.location, u.profile_photo_url, EXISTS (SELECT 1 FROM interested i WHERE i.uuid = $1::text AND i.post_uuid = p.post_uuid) AS interested, u.name, u.phone, p.interested_count, p.comment_count FROM posts AS p JOIN users AS u ON u.uuid = p.uuid WHERE p.uuid = $1 ORDER BY p.created_at DESC LIMIT $2 OFFSET $3;`
 }
 
-func getGetMyArgs(uuid, section string, page int) []any {
-	args := make(map[string][]any, 0)
+func getGetMyArgs(uuid string, page int) []any {
 
 	limit := 20
 
 	offset := (page - 1) * limit
 
-	args["helpnearby"] = []any{section, uuid, limit, offset}
-	args["impactevents"] = []any{section, uuid, limit, offset}
-	args["moments"] = []any{section, uuid, limit, offset}
-	args["missingpeople"] = []any{section, uuid, limit, offset}
-	args["bloodemergency"] = []any{section, uuid, limit, offset}
+	args := []any{uuid, limit, offset}
 
-	return args[section]
+	return args
 }
 
-func getGetMyScan(section string, post *models.Post, locJSON *[]byte) []any {
-	args := make(map[string][]any, 0)
+func getGetMyScan(post *models.Post, locJSON *[]byte) []any {
 
 	if post.Media == nil {
 		post.Media = []string{}
 	}
 
-	args["helpnearby"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount, &post.CommentCount}
-	args["impactevents"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.Longitude, &post.Latitude, &post.CreatedAt, &post.EventAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount, &post.CommentCount}
-	args["moments"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.InterestedCount, &post.CommentCount}
-	args["missingpeople"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, pq.Array(&post.Media), &post.Gender, &post.Age, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount, &post.CommentCount}
-	args["bloodemergency"] = []any{&post.PostUUID, &post.UUID, &post.Title, &post.Description, &post.BloodGroup, &post.Longitude, &post.Latitude, &post.CreatedAt, locJSON, &post.ProfilePhotoURL, &post.Interested, &post.Name, &post.Phone, &post.InterestedCount, &post.CommentCount}
+	args := []any{
+		&post.PostUUID,
+		&post.UUID,
+		&post.Title,
+		&post.Description,
+		&post.Type,
+		pq.Array(&post.Media),
+		&post.Gender,
+		&post.Age,
+		&post.BloodGroup,
+		&post.Longitude,
+		&post.Latitude,
+		&post.CreatedAt,
+		&post.EventAt,
+		locJSON,
+		&post.ProfilePhotoURL,
+		&post.Interested,
+		&post.Name,
+		&post.Phone,
+		&post.InterestedCount,
+		&post.CommentCount,
+	}
 
-	return args[section]
+	return args
 }
