@@ -535,7 +535,7 @@ func RetrieveRequestGetDB(uuid, section string, page int, coordinates models.Coo
 	return posts, utils.Errorhandler{}
 }
 
-func RetrieveMyRequestGetDB(uuid string, page int) ([]models.Post, utils.Errorhandler) {
+func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, utils.Errorhandler) {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		return nil, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
@@ -544,9 +544,9 @@ func RetrieveMyRequestGetDB(uuid string, page int) ([]models.Post, utils.Errorha
 
 	posts := make([]models.Post, 0)
 
-	query := getGetMyQuery()
+	query := getGetMyQuery(section)
 
-	args := getGetMyArgs(uuid, page)
+	args := getGetMyArgs(uuid, section, page)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -563,7 +563,7 @@ func RetrieveMyRequestGetDB(uuid string, page int) ([]models.Post, utils.Errorha
 		var post models.Post
 		var locJSON []byte
 
-		scans := getGetMyScan(&post, &locJSON)
+		scans := getGetMyScan(section, &post, &locJSON)
 
 		err := rows.Scan(scans...)
 
@@ -589,7 +589,6 @@ func RetrieveMyRequestGetDB(uuid string, page int) ([]models.Post, utils.Errorha
 
 	return posts, utils.Errorhandler{}
 }
-
 // expo token--------------------------------------------------------------------
 
 func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {

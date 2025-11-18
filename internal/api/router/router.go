@@ -34,7 +34,7 @@ func Router() *http.ServeMux {
 	// app functions--------------------------------------------------------------------------------
 	mux.HandleFunc("POST /request/create/{section}", handlers.HandleRequestCreate)
 	mux.HandleFunc("GET /request/retrieve/{section}", handlers.HandleRequestRetrieve)
-	mux.HandleFunc("GET /request/my", handlers.HandleMyRequestRetrieve)
+	mux.HandleFunc("GET /request/my/{section}", handlers.HandleMyRequestRetrieve)
 	mux.HandleFunc("PATCH /request/done/{postid}", handlers.HandleRequestDone)
 	mux.HandleFunc("DELETE /request/delete/{postid}", handlers.HandleRequestDelete)
 	// --- expo--------------------------------------------------------------------

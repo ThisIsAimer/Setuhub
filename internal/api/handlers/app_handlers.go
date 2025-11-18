@@ -285,7 +285,17 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	posts, myErr := databasehandler.RetrieveMyRequestGetDB(uuid, page)
+	section := r.PathValue("section")
+
+	section = strings.TrimSpace(section)
+
+	_, err := checkSection(section)
+	if err != nil {
+		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	posts, myErr := databasehandler.RetrieveMyRequestGetDB(uuid, section, page)
 
 	if myErr.MyError != nil {
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
@@ -314,7 +324,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		Data:    posts,
 	}
 
-	err := json.NewEncoder(w).Encode(response)
+	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
