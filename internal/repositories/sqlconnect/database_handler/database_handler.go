@@ -620,31 +620,52 @@ func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {
 }
 
 // done --------------------------------------------------------------------------------------------------------------------
-func DonePatchRequestDB(postid string) utils.Errorhandler {
+func DonePatchRequestDB(postid, myUuid string) utils.Errorhandler {
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
 		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
-	query := `UPDATE posts SET done = $2 WHERE post_uuid = $1;`
+	query := `UPDATE posts SET done = $2 WHERE post_uuid = $1 AND uuid = $3;`
 
-	res, err := db.Exec(query, postid, true)
+	res, err := db.Exec(query, postid, true, myUuid)
 	if err != nil {
 		return utils.ErrorHandler(err, "Error updating query", http.StatusInternalServerError)
 	}
 
 	// Check if any row was actually updated
-	rows, err := res.RowsAffected()
-	if err != nil {
-		return utils.ErrorHandler(err, "Error getting affected rows", http.StatusInternalServerError)
-	}
+	rows, _ := res.RowsAffected()
 
 	if rows == 0 {
-		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "No post found with postid", http.StatusBadRequest)
+		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "Unauthorised post deletion", http.StatusUnauthorized)
 	}
 
 	return utils.Errorhandler{}
+}
+
+// delete ------------------------------------------------------------------------------------------------------------------------------
+func DeletePostRequestDB(postid, myUuid string) utils.Errorhandler {
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
+	}
+	defer db.Close()
+
+	query := `DELETE FROM posts WHERE post_uuid = $1 AND uuid = $2;`
+
+	res, err := db.Exec(query, postid, myUuid)
+	if err != nil {
+		return utils.ErrorHandler(err, "Error deleting post", http.StatusInternalServerError)
+	}
+
+	rows, _ := res.RowsAffected()
+
+	if rows == 0 {
+		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "Post not found", http.StatusNotFound)
+	}
+
+	return utils.ErrorHandler(nil, "Post deleted successfully", http.StatusOK)
 }
 
 // interested-----------------------------------------------------------------------------------------------------------------------------

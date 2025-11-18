@@ -36,6 +36,7 @@ func Router() *http.ServeMux {
 	mux.HandleFunc("GET /request/retrieve/{section}", handlers.HandleRequestRetrieve)
 	mux.HandleFunc("GET /request/my/{section}", handlers.HandleMyRequestRetrieve)
 	mux.HandleFunc("PATCH /request/done/{postid}", handlers.HandleRequestDone)
+	mux.HandleFunc("DELETE /request/delete/{postid}", handlers.HandleRequestDelete)
 	// --- expo--------------------------------------------------------------------
 	mux.HandleFunc("POST /set/token", handlers.SetFirebaseToken)
 	// --- interested ------------------------------------------------------------

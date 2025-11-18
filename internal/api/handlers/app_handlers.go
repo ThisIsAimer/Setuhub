@@ -382,6 +382,14 @@ func SetFirebaseToken(w http.ResponseWriter, r *http.Request) {
 
 // done -----------------------------------------------------------------------------------------------------
 func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
 	postId := r.PathValue("postid")
 
 	if postId == "" {
@@ -390,7 +398,7 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	myErr := databasehandler.DonePatchRequestDB(postId)
+	myErr := databasehandler.DonePatchRequestDB(postId, uuid)
 	if myErr.MyError != nil {
 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
 		return
@@ -404,6 +412,47 @@ func HandleRequestDone(w http.ResponseWriter, r *http.Request) {
 	}{
 		Status:  "Success",
 		Message: "Post set Done",
+	}
+
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+}
+
+func HandleRequestDelete(w http.ResponseWriter, r *http.Request) {
+
+	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+
+	if !ok {
+		utils.WriteJSONError(w, "No user id in jwt", http.StatusUnauthorized)
+		return
+	}
+
+	postId := r.PathValue("postid")
+
+	if postId == "" {
+		myErr := utils.ErrorHandler(fmt.Errorf("no postid given"), "No postid given", http.StatusBadRequest)
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	myErr := databasehandler.DeletePostRequestDB(postId, uuid)
+	if myErr.MyError != nil {
+		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	response := struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}{
+		Status:  "Success",
+		Message: "Post Deleted",
 	}
 
 	err := json.NewEncoder(w).Encode(response)
