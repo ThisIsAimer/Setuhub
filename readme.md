@@ -34,7 +34,7 @@ It’s not just another app — it’s a **Setu (bridge)** that connects people 
 - Lets users organize or join local, impact-driven events — tree plantations, food drives, or charity efforts.  
 - Turns **intent into action** instantly.  
 - Empowers changemakers to create local impact that **ripples globally.**  
-- **Tagline:** “We didn’t make an app to change the world — we made one that helps people *create change* in the world.”
+- **Tagline:** “We didn’t just make an app to change the world — we made one that helps people *create change* in the world.”
 
 ---
 

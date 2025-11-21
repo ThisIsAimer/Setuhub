@@ -312,12 +312,13 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 		message = "No posts available"
 	} else {
 		status = "Success"
+		message = "Posts sent successfully"
 	}
 
 	response := struct {
 		Status  string        `json:"status"`
-		Message string        `json:"message,omitempty"`
-		Data    []models.Post `json:"data"`
+		Message string        `json:"message"`
+		Data    []models.Post `json:"data,omitempty"`
 	}{
 		Status:  status,
 		Message: message,
