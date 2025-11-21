@@ -318,7 +318,7 @@ func HandleMyRequestRetrieve(w http.ResponseWriter, r *http.Request) {
 	response := struct {
 		Status  string        `json:"status"`
 		Message string        `json:"message"`
-		Data    []models.Post `json:"data,omitempty"`
+		Data    []models.Post `json:"data"`
 	}{
 		Status:  status,
 		Message: message,
