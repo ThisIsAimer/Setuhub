@@ -664,7 +664,7 @@ func DeletePostRequestDB(postid, myUuid string) utils.Errorhandler {
 		return utils.ErrorHandler(fmt.Errorf("no posts with postid %s", postid), "Post not found", http.StatusNotFound)
 	}
 
-	return utils.ErrorHandler(nil, "Post deleted successfully", http.StatusOK)
+	return utils.Errorhandler{}
 }
 
 // interested-----------------------------------------------------------------------------------------------------------------------------
