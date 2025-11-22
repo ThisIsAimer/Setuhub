@@ -414,6 +414,9 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 	if post.Radius == 0 {
 		post.Radius = 3000
+		if section == "impactevents"{
+			post.Radius = 7000
+		}
 	}
 
 	query := getPostAppQuery(section)
