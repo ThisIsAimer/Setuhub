@@ -104,7 +104,7 @@ func SignUpHandlerfunc(w http.ResponseWriter, r *http.Request) {
 		Message    string `json:"message"`
 	}{
 		Status:     "Success",
-		Message:    "Signing you up",
+		Message:    "Otp sent to mail successfully",
 	}
 
 	err = json.NewEncoder(w).Encode(response)
