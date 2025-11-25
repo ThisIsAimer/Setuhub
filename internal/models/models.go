@@ -74,9 +74,9 @@ type Post struct {
 	InterestedCount int  `json:"interestedCount" db:"interested_count"`
 	Interested      bool `json:"interested" db:"interested"`
 
-	CommentCount int `json:"commentCount,omitempty" db:"comment_count"`
+	CommentCount int `json:"commentCount" db:"comment_count"`
 
-	Done  bool `json:"done,omitempty" db:"done"`
+	Done  bool `json:"done" db:"done"`
 }
 
 type LocationObj struct {
