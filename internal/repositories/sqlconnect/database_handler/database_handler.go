@@ -782,7 +782,7 @@ func GetCommentDBHandler(postUuid, uuid string, page int) ([]models.Comment, uti
 	  FROM comments AS c
 	  JOIN users AS u ON c.uuid = u.uuid
 	  WHERE c.post_uuid = $1::uuid
-	  ORDER BY (uuid = $2::text) DESC, created_at DESC, comment_uuid DESC
+	  ORDER BY (c.uuid = $2::text) DESC, created_at DESC, comment_uuid DESC
 	LIMIT $3::int OFFSET $4;
   `
 	rows, err := db.Query(query, postUuid, uuid, limit, offset)
