@@ -2,17 +2,16 @@ package databasehandler
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hackathon/internal/models"
+	"io"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/lib/pq"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 func randOTP(n int) string {
@@ -25,53 +24,51 @@ func randOTP(n int) string {
 }
 
 func sendOTP(to, otp string) error {
-	fromEmail := strings.TrimSpace(os.Getenv("FROM_EMAIL"))
-	fromName := strings.TrimSpace(os.Getenv("FROM_NAME"))
-	apiKey := strings.TrimSpace(os.Getenv("SENDGRID_API_KEY"))
+	apiKey := os.Getenv("BREVO_API_KEY")
+	from := os.Getenv("FROM_EMAIL")
+	fromName := os.Getenv("FROM_NAME") // optional
 
-	if fromEmail == "" || apiKey == "" {
-		return errors.New("missing FROM_EMAIL or SENDGRID_API_KEY")
-	}
-	if to == "" || otp == "" {
-		return errors.New("missing recipient or otp")
+	if apiKey == "" || from == "" {
+		return fmt.Errorf("missing brevo api credentials")
 	}
 
-	from := mail.NewEmail(fromName, fromEmail)
-	toE := mail.NewEmail("", to)
+	payload := fmt.Sprintf(`{
+	  "sender": {
+		"email": "%s",
+		"name": "%s"
+	  },
+	  "to": [
+		{ "email": "%s" }
+	  ],
+	  "subject": "Your OTP Code",
+	  "htmlContent": "<p>Your OTP is <b>%s</b><br/>Expires in 7 minutes.</p>"
+	}`, from, fromName, to, otp)
 
-	subject := "Your OTP code"
-	plain := fmt.Sprintf(
-		"Your OTP is: %s\nPlease enter the otp in our app\nOTP expires in 7 mins\n\n%s",
-		otp, fromName,
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://api.brevo.com/v3/smtp/email",
+		strings.NewReader(payload),
 	)
-
-	msg := mail.NewSingleEmail(from, subject, toE, plain, "")
-
-	// Disable tracking for OTPs (avoids link rewriting/spam signals).
-	tracking := mail.NewTrackingSettings()
-
-	click := mail.NewClickTrackingSetting()
-	click.SetEnable(false)
-	click.SetEnableText(false)
-	tracking.SetClickTracking(click)
-
-	open := mail.NewOpenTrackingSetting()
-	open.SetEnable(false)
-	tracking.SetOpenTracking(open)
-
-	msg.SetTrackingSettings(tracking)
-
-	// Optional: set a Reply-To if you have a support inbox
-	// msg.SetReplyTo(mail.NewEmail("Support", "support@yourdomain.com"))
-
-	client := sendgrid.NewSendClient(apiKey)
-	resp, err := client.Send(msg)
 	if err != nil {
-		return fmt.Errorf("sendgrid send failed: %w", err)
+		return err
 	}
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("sendgrid send failed: status=%d, body=%s", resp.StatusCode, resp.Body)
+
+	req.Header.Set("api-key", apiKey)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("brevo api error (%d): %s", resp.StatusCode, body)
+	}
+
 	return nil
 }
 

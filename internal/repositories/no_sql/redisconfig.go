@@ -2,7 +2,6 @@ package nosql
 
 import (
 	"context"
-	"crypto/tls"
 	"os"
 
 	"github.com/redis/go-redis/v9"
@@ -11,7 +10,6 @@ import (
 type noopLogger struct{}
 
 func (noopLogger) Printf(ctx context.Context, format string, v ...interface{}) {}
-
 
 func RedisCliant() (*redis.Client, error) {
 	redisURL := os.Getenv("REDIS_URL")
@@ -23,7 +21,7 @@ func RedisCliant() (*redis.Client, error) {
 	}
 
 	// Upstash requires TLS (rediss://)
-	opt.TLSConfig = &tls.Config{}
+	// opt.TLSConfig = &tls.Config{}
 
 	rdb := redis.NewClient(opt)
 

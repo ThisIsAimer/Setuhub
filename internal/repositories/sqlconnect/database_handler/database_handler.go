@@ -59,23 +59,34 @@ func SignUpDBHandler(newUser models.User) (models.User, utils.Errorhandler) {
 	if newUser.Role == "" {
 		newUser.Role = "user"
 	}
+	// encoding password-----------------------------------------------------------------------------
+	salt := make([]byte, 16)
+
+	_, err = rand.Read(salt)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "Error making salt", http.StatusInternalServerError)
+	}
+
+	newUser.Password, err = utils.PassEncoder(newUser.Password, salt)
+	if err != nil {
+		return models.User{}, utils.ErrorHandler(err, "Error encoding pass", http.StatusInternalServerError)
+	}
 
 	// 	stmt, err := db.Prepare("INSERT INTO users(first_name, last_name, email, class, subject) VALUES(?, ?, ?, ?, ?)")
 	key := "data:" + newUser.Uuid
 
-	err = rdb.HSet(ctx, key,
+	pipe := rdb.TxPipeline()
+
+	pipe.HSet(ctx, key,
 		"otp", otp,
 		"email", newUser.Email,
 		"pass", newUser.Password,
-	).Err()
+	)
+	pipe.Expire(ctx, key, 7*time.Minute)
 
+	_, err = pipe.Exec(ctx)
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error uploading data (rdb)", http.StatusInternalServerError)
-	}
-
-	err = rdb.Expire(ctx, key, 7*time.Minute).Err()
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error uploading data (rdb)", http.StatusInternalServerError)
+		return models.User{}, utils.ErrorHandler(err, "redis error", http.StatusInternalServerError)
 	}
 
 	err = sendOTP(newUser.Email, otp)
@@ -123,19 +134,6 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 	// checking otp ---------------------------------------------------------------------------------
 	if otp != realOtp {
 		return models.User{}, utils.ErrorHandler(fmt.Errorf("incorrect otp"), "Incorrect otp", http.StatusBadRequest)
-	}
-
-	// encoding password-----------------------------------------------------------------------------
-	salt := make([]byte, 16)
-
-	_, err = rand.Read(salt)
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error making salt", http.StatusInternalServerError)
-	}
-
-	user.Password, err = utils.PassEncoder(user.Password, salt)
-	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error encoding pass", http.StatusInternalServerError)
 	}
 
 	result, err := db.Exec("INSERT INTO users(uuid, email, password, role, authentication) VALUES($1, $2, $3, $4, $5)",
@@ -414,7 +412,7 @@ func CreateRequestPostDB(uuid, section string, post models.Post, noti chan strin
 
 	if post.Radius == 0 {
 		post.Radius = 3000
-		if section == "impactevents"{
+		if section == "impactevents" {
 			post.Radius = 7000
 		}
 	}
@@ -592,6 +590,7 @@ func RetrieveMyRequestGetDB(uuid, section string, page int) ([]models.Post, util
 
 	return posts, utils.Errorhandler{}
 }
+
 // expo token--------------------------------------------------------------------
 
 func SetFirebaseTokenDbHandler(uuid, token string) utils.Errorhandler {
