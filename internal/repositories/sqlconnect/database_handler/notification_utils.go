@@ -157,8 +157,12 @@ func sendNotifications(post models.Post, myUuid string, noti chan string) {
 
 	query := `SELECT firebase_token FROM users WHERE ST_DWithin(coordinates, ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography, $3) AND uuid != $4;`
 
-	rows, err := db.Query(query,
-		post.Longitude, post.Latitude, post.Radius, myUuid,
+	rows, err := db.Query(
+		query,
+		post.Longitude,
+		post.Latitude,
+		post.Radius,
+		myUuid,
 	)
 	if err != nil {
 		myErr := utils.ErrorHandler(err, "unable to notify", 0)
@@ -184,6 +188,12 @@ func sendNotifications(post models.Post, myUuid string, noti chan string) {
 			tokens = append(tokens, token)
 		}
 
+	}
+
+	if err := rows.Err(); err != nil {
+		myErr := utils.ErrorHandler(err, "unable to notify", 0)
+		noti <- myErr.MyError.Error()
+		return
 	}
 
 	if len(tokens) == 0 {

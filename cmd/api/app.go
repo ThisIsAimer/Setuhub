@@ -45,7 +45,7 @@ func main() {
 
 	hppMiddleware := mid.Hpp(*hppSettings)
 
-	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/logout", "/login/forgotpassword", "/")
+	jwtMiddleware := mid.SkipJwtRoutes(mid.JwtMiddleware, "/signup", "/login", "/logout", "/login/forgotpassword","/didit/webhook", "/")
 
 	secureRouter := utils.ApplyMiddlewares(router.Router(), mid.SecurityHeaders, jwtMiddleware, hppMiddleware, mid.XSSMiddleware, rateLimiter.Middleware, mid.Cors)
 

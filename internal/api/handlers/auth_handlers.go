@@ -214,86 +214,86 @@ func SignUpOtpfunc(w http.ResponseWriter, r *http.Request) {
 
 // authenticate ------------------------------------------------------------------------------------------------
 
-func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
+// func AuthenticationHandler(w http.ResponseWriter, r *http.Request) {
 
-	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
-	if !ok {
-		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
-		return
-	}
+// 	uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+// 	if !ok {
+// 		utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
-	if !ok {
-		utils.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
+// 	auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
+// 	if !ok {
+// 		utils.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
+// 		return
+// 	}
 
-	if auth == "verified" {
-		utils.WriteJSONError(w, "User already verified", http.StatusBadRequest)
-		return
-	}
+// 	if auth == "verified" {
+// 		utils.WriteJSONError(w, "User already verified", http.StatusBadRequest)
+// 		return
+// 	}
 
-	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
+// 	decoder := json.NewDecoder(r.Body)
+// 	decoder.DisallowUnknownFields()
 
-	var userInfo models.UserInfo
+// 	var userInfo models.UserInfo
 
-	err := decoder.Decode(&userInfo)
-	if err != nil {
-		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
+// 	err := decoder.Decode(&userInfo)
+// 	if err != nil {
+// 		myErr := utils.ErrorHandler(err, "Error decoding json body", http.StatusBadRequest)
+// 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+// 		return
+// 	}
 
-	err = checkEmptyField(userInfo)
+// 	err = checkEmptyField(userInfo)
 
-	if err != nil {
-		myErr := utils.ErrorHandler(err, "One or more user info fields empty", http.StatusBadRequest)
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
+// 	if err != nil {
+// 		myErr := utils.ErrorHandler(err, "One or more user info fields empty", http.StatusBadRequest)
+// 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+// 		return
+// 	}
 
-	user, myErr := databasehandler.AuthenticationDBhandler(uuid, userInfo)
+// 	user, myErr := databasehandler.AuthenticationDBhandler(uuid, userInfo)
 
-	if myErr.MyError != nil {
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
+// 	if myErr.MyError != nil {
+// 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+// 		return
+// 	}
 
-	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
-	if err != nil {
-		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+// 	tokenString, err := utils.SignToken(user.Uuid, user.Role, user.Authentication)
+// 	if err != nil {
+// 		utils.WriteJSONError(w, err.Error(), http.StatusInternalServerError)
+// 		return
+// 	}
 
-	// send token as response or a cookie
-	http.SetCookie(w, &http.Cookie{
-		Name:     "Bearer",
-		Value:    tokenString,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   true,
-		Expires:  time.Now().AddDate(0, 6, 0),
-		SameSite: http.SameSiteStrictMode,
-	})
+// 	// send token as response or a cookie
+// 	http.SetCookie(w, &http.Cookie{
+// 		Name:     "Bearer",
+// 		Value:    tokenString,
+// 		Path:     "/",
+// 		HttpOnly: true,
+// 		Secure:   true,
+// 		Expires:  time.Now().AddDate(0, 6, 0),
+// 		SameSite: http.SameSiteStrictMode,
+// 	})
 
-	w.Header().Set("Content-Type", "application/json")
+// 	w.Header().Set("Content-Type", "application/json")
 
-	response := struct {
-		Status  string `json:"status"`
-		Message string `json:"message"`
-	}{
-		Status:  "Success",
-		Message: "Authenticated successfully",
-	}
+// 	response := struct {
+// 		Status  string `json:"status"`
+// 		Message string `json:"message"`
+// 	}{
+// 		Status:  "Success",
+// 		Message: "Authenticated successfully",
+// 	}
 
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
-}
+// 	err = json.NewEncoder(w).Encode(response)
+// 	if err != nil {
+// 		myErr := utils.ErrorHandler(err, "Failed to encode response", http.StatusInternalServerError)
+// 		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
+// 		return
+// 	}
+// }
 
 // login-------------------------------------------------------------------------------------------
 

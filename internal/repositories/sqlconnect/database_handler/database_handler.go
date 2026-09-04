@@ -164,20 +164,28 @@ func SignupOtpDBHandler(uuid, role, otp string) (models.User, utils.Errorhandler
 
 // authenticat ------------------------------------------------------------------------------------------------------------------
 
-func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User, utils.Errorhandler) {
+func AuthenticationDBhandler(uuid string, sessionId string) utils.Errorhandler {
 
 	db, err := sqlconnect.ConnectDB()
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error connecting to database", http.StatusInternalServerError)
 	}
 	defer db.Close()
 
-	_, err = db.Exec("UPDATE users SET aadhar = $1, name = $2, phone = $3, gender = $4, address = $5, date_of_birth = $6, authentication = $7 WHERE uuid = $8",
-		userInfo.Aadhar, userInfo.Name, userInfo.Phone, userInfo.Gender, userInfo.Address, userInfo.DateOfBirth, "verified", uuid,
+	query := `
+		UPDATE users
+		SET
+			didit_session_id = $1,
+			verification_status = 'verified'
+		WHERE uuid = $2
+	`
+
+	_, err = db.Exec(query,
+		sessionId, uuid,
 	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "Error updating database", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "Error updating database", http.StatusInternalServerError)
 	}
 
 	var user models.User
@@ -187,10 +195,51 @@ func AuthenticationDBhandler(uuid string, userInfo models.UserInfo) (models.User
 	)
 
 	if err != nil {
-		return models.User{}, utils.ErrorHandler(err, "User not found", http.StatusInternalServerError)
+		return utils.ErrorHandler(err, "User not found", http.StatusInternalServerError)
 	}
 
-	return user, utils.Errorhandler{}
+	return utils.Errorhandler{}
+}
+
+func GetVerificationStatusDBHandler(uuid string) (bool, string, utils.Errorhandler) {
+
+	var status, role string
+
+	db, err := sqlconnect.ConnectDB()
+	if err != nil {
+		return false, "", utils.ErrorHandler(
+			err,
+			"Error connecting to database",
+			http.StatusInternalServerError,
+		)
+	}
+
+	defer db.Close()
+
+	query := `
+		SELECT verification_status, role
+		FROM users
+		WHERE uuid = $1
+	`
+
+	err = db.QueryRow(query, uuid).Scan(&status, &role)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, role, utils.ErrorHandler(
+				err,
+				"User not found",
+				http.StatusNotFound,
+			)
+		}
+
+		return false, role, utils.ErrorHandler(
+			err,
+			"Error getting verification status",
+			http.StatusInternalServerError,
+		)
+	}
+
+	return status == "verified", role, utils.Errorhandler{}
 }
 
 // login---------------------------------------------------------------------------------------------------------------------------

@@ -76,7 +76,7 @@ type Post struct {
 
 	CommentCount int `json:"commentCount" db:"comment_count"`
 
-	Done  bool `json:"done" db:"done"`
+	Done bool `json:"done" db:"done"`
 }
 
 type LocationObj struct {
@@ -110,4 +110,20 @@ type Comment struct {
 	Edited          bool      `json:"edited,omitempty" db:"edited"`
 	CommentCount    int       `json:"commentCount,omitempty" db:"comment_count"`
 	ProfilePhotoURL string    `json:"profilePhotoUrl" db:"profile_photo_url"`
+}
+
+// Did----------------------------------------------------------------------------------
+type CreateVerificationRequest struct {
+	UserID string `json:"user_id"`
+}
+
+type DiditSessionResponse struct {
+	SessionID string `json:"session_id"`
+	URL       string `json:"url"`
+}
+
+type DiditWebhook struct {
+	SessionID  string `json:"session_id"`
+	Status     string `json:"status"`
+	VendorData string `json:"vendor_data"`
 }
