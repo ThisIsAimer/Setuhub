@@ -113,10 +113,6 @@ type Comment struct {
 }
 
 // Did----------------------------------------------------------------------------------
-type CreateVerificationRequest struct {
-	UserID string `json:"user_id"`
-}
-
 type DiditSessionResponse struct {
 	SessionID string `json:"session_id"`
 	URL       string `json:"url"`

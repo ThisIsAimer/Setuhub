@@ -14,7 +14,7 @@ func Router() *http.ServeMux {
 	// auth crud-----------------------------------------------------------------------------------
 	mux.HandleFunc("POST /signup", handlers.SignUpHandlerfunc)
 	mux.HandleFunc("POST /signup/otp", handlers.SignUpOtpfunc)
-	mux.HandleFunc("POST /authenticate", handlers.CreateVerification)
+	mux.HandleFunc("GET /authenticate", handlers.CreateVerification)
 	mux.HandleFunc("GET /checkstatus", handlers.CheckVerStatus)
 	mux.HandleFunc("POST /didit/webhook", handlers.DiditWebhook)
 

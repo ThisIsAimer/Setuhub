@@ -14,31 +14,24 @@ import (
 )
 
 func CreateVerification(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		myErr := utils.ErrorHandler(
-			fmt.Errorf("method not allowed"),
-			"Method not allowed",
-			http.StatusMethodNotAllowed,
-		)
+		uuid, ok := r.Context().Value(utils.JwtKey("uuid")).(string)
+		if !ok {
+			utils.WriteJSONError(w, "no user id in jwt", http.StatusUnauthorized)
+			return
+		}
 
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
+		auth, ok := r.Context().Value(utils.JwtKey("auth")).(string)
+		if !ok {
+			utils.WriteJSONError(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
 
-	var req models.CreateVerificationRequest
+		if auth != "mail_verified" {
+			utils.WriteJSONError(w, "User isnt allowed to use this", http.StatusBadRequest)
+			return
+		}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		myErr := utils.ErrorHandler(
-			err,
-			"Invalid request",
-			http.StatusBadRequest,
-		)
-
-		utils.WriteJSONError(w, myErr.MyError.Error(), myErr.Status)
-		return
-	}
-
-	if req.UserID == "" {
+	if uuid == "" {
 		myErr := utils.ErrorHandler(
 			fmt.Errorf("user_id is required"),
 			"User ID is required",
@@ -52,7 +45,7 @@ func CreateVerification(w http.ResponseWriter, r *http.Request) {
 	apiKey := os.Getenv("DIDIT_API_KEY")
 
 	payload := map[string]interface{}{
-		"vendor_data":  req.UserID,
+		"vendor_data":  uuid,
 		"callback_url": "setuhub://callback",
 	}
 
